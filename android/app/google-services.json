@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "976271937331",
+    "project_id": "mess-duty-9e967",
+    "storage_bucket": "mess-duty-9e967.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976271937331:android:dc7725e132a8a0879db846",
+        "android_client_info": {
+          "package_name": "com.example.mess_duty"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwLh2KcbGpzb1cx4c99XaOyCLiCLlqGvg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

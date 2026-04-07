@@ -6,21 +6,18 @@ import 'app/modules/auth/auth_controller.dart';
 import 'app/modules/dashboard/dashboard_controller.dart';
 import 'app/modules/auth/login_view.dart';
 import 'app/modules/dashboard/dashboard_view.dart';
-
-// Import this if you have the file, otherwise comment it out until generated
-// import 'firebase_options.dart';
+import 'app/modules/dashboard/members_view.dart';
+import 'app/modules/dashboard/tasks_view.dart';
+import 'app/modules/dashboard/history_view.dart';
+import 'app/modules/dashboard/request_task_view.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // NOTE: You must run `flutterfire configure` to generate firebase_options.dart
-  // For now, we will initialize without it if not available, which might fail 
-  // until the user configures it.
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    print("Firebase initialization failed. Please run flutterfire configure: \u0024e");
-  }
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize AuthController globally
   Get.put(AuthController(), permanent: true);
@@ -47,6 +44,10 @@ class MyApp extends StatelessWidget {
             Get.lazyPut(() => DashboardController());
           }),
         ),
+        GetPage(name: '/members', page: () => const MembersView()),
+        GetPage(name: '/tasks', page: () => const TasksView()),
+        GetPage(name: '/history', page: () => const HistoryView()),
+        GetPage(name: '/request', page: () => const RequestTaskView()),
       ],
       debugShowCheckedModeBanner: false,
     );

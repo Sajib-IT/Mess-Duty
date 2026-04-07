@@ -31,6 +31,14 @@ class FirestoreService {
   }
 
   // Task Operations
+  Future<void> saveTask(TaskModel task) async {
+    await _db.collection('tasks').doc(task.id).set(task.toMap(), SetOptions(merge: true));
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _db.collection('tasks').doc(taskId).delete();
+  }
+
   Stream<List<TaskModel>> streamTasks() {
     return _db.collection('tasks').snapshots().map(
           (snapshot) => snapshot.docs
@@ -85,6 +93,17 @@ class FirestoreService {
     return _db
         .collection('task_assignments')
         .where('assignedAt', isGreaterThanOrEqualTo: startOfDay.millisecondsSinceEpoch)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => TaskAssignmentModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Stream<List<TaskAssignmentModel>> streamHistory() {
+    return _db
+        .collection('task_assignments')
+        .orderBy('assignedAt', descending: true)
+        .limit(50)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => TaskAssignmentModel.fromMap(doc.data(), doc.id))

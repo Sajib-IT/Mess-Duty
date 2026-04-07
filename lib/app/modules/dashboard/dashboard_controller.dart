@@ -13,6 +13,7 @@ class DashboardController extends GetxController {
   final RxList<TaskModel> allTasks = <TaskModel>[].obs;
   final RxList<TaskRequestModel> pendingRequests = <TaskRequestModel>[].obs;
   final RxList<TaskAssignmentModel> todayAssignments = <TaskAssignmentModel>[].obs;
+  final RxList<TaskAssignmentModel> historyAssignments = <TaskAssignmentModel>[].obs;
 
   @override
   void onInit() {
@@ -21,9 +22,30 @@ class DashboardController extends GetxController {
     allTasks.bindStream(_firestoreService.streamTasks());
     pendingRequests.bindStream(_firestoreService.streamPendingRequests());
     todayAssignments.bindStream(_firestoreService.streamTodayAssignments());
+    historyAssignments.bindStream(_firestoreService.streamHistory());
     
     // Check for daily/weekly tasks on init
-    ever(allTasks, (_) => _checkAndAssignPeriodicTasks());
+    ever(allTasks, (_) {
+      if (allTasks.isEmpty) {
+        _initializeDefaultTasks();
+      }
+      _checkAndAssignPeriodicTasks();
+    });
+  }
+
+  Future<void> _initializeDefaultTasks() async {
+    // This is for demonstration, usually tasks would be added via UI
+    final defaultTasks = [
+      TaskModel(id: 'tea', title: 'Tea Making', description: 'Available on request', type: TaskType.event, membersOrder: []),
+      TaskModel(id: 'water', title: 'Water Filter Refill', description: 'Available on request', type: TaskType.event, membersOrder: []),
+      TaskModel(id: 'bathroom', title: 'Bathroom Cleaning', description: 'Daily task', type: TaskType.daily, membersOrder: []),
+      TaskModel(id: 'basin', title: 'Basin Cleaning', description: 'Daily task', type: TaskType.daily, membersOrder: []),
+      TaskModel(id: 'garbage', title: 'Garbage Disposal', description: 'Weekly task', type: TaskType.weekly, membersOrder: []),
+    ];
+
+    for (var task in defaultTasks) {
+      await _firestoreService.saveTask(task);
+    }
   }
 
   void _checkAndAssignPeriodicTasks() {
@@ -53,25 +75,24 @@ class DashboardController extends GetxController {
   }
 
   Future<void> requestTea() async {
-    // Find tea task
+    // Legacy mapping for old Tea button
     TaskModel? teaTask = allTasks.firstWhereOrNull((t) => t.title.toLowerCase().contains('tea'));
-    if (teaTask == null) {
+    if (teaTask != null) {
+      TaskRequestModel request = TaskRequestModel(
+        id: '',
+        taskId: teaTask.id,
+        requestedBy: Get.find<AuthController>().userModel.value?.id ?? 'system',
+        createdAt: DateTime.now(),
+      );
+      createCustomRequest(request, teaTask);
+    } else {
       Get.snackbar('Error', 'Tea task not configured');
-      return;
     }
+  }
 
-    // Create a request
-    TaskRequestModel request = TaskRequestModel(
-      id: '',
-      taskId: teaTask.id,
-      requestedBy: Get.find<AuthController>().userModel.value?.id ?? 'system',
-      createdAt: DateTime.now(),
-    );
-
+  Future<void> createCustomRequest(TaskRequestModel request, TaskModel task) async {
     String requestId = await _firestoreService.createRequest(request);
-    
-    // Automatically assign for event-based tasks like tea
-    _assignTask(teaTask, requestId: requestId);
+    await _assignTask(task, requestId: requestId);
   }
 
   Future<void> _assignTask(TaskModel task, {String? requestId}) async {
@@ -100,6 +121,11 @@ class DashboardController extends GetxController {
 
   Future<void> completeTask(String assignmentId) async {
     await _firestoreService.completeAssignment(assignmentId);
+  }
+
+  Future<void> updateTaskMembers(TaskModel task, List<String> newOrder) async {
+    final updatedTask = task.copyWith(membersOrder: newOrder);
+    await _firestoreService.saveTask(updatedTask);
   }
 
   String getUserName(String uid) {

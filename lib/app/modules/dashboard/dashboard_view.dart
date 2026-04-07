@@ -51,9 +51,9 @@ class DashboardView extends GetView<DashboardController> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => controller.requestTea(),
-        label: const Text('Request Tea'),
-        icon: const Icon(Icons.emoji_food_beverage_rounded),
+        onPressed: () => Get.toNamed('/request'),
+        label: const Text('Request Duty'),
+        icon: const Icon(Icons.add_alert_rounded),
       ),
     );
   }
@@ -102,11 +102,11 @@ class DashboardView extends GetView<DashboardController> {
   Widget _buildQuickActions() {
     return Row(
       children: [
-        _ActionCard(icon: Icons.people, label: 'Members', onTap: () {}),
+        _ActionCard(icon: Icons.people, label: 'Members', onTap: () => Get.toNamed('/members')),
         const SizedBox(width: 12),
-        _ActionCard(icon: Icons.history, label: 'History', onTap: () {}),
+        _ActionCard(icon: Icons.history, label: 'History', onTap: () => Get.toNamed('/history')),
         const SizedBox(width: 12),
-        _ActionCard(icon: Icons.settings, label: 'Tasks', onTap: () {}),
+        _ActionCard(icon: Icons.settings, label: 'Tasks', onTap: () => Get.toNamed('/tasks')),
       ],
     );
   }
