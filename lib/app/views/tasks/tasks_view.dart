@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../models/task_models.dart';
 import '../../models/user_model.dart';
 import '../../services/notification_service.dart';
+import '../../services/push_notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/shared_widgets.dart';
@@ -372,15 +373,31 @@ class _ContactButtons extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final notifService = Get.find<NotificationService>();
+                final pushService = Get.find<PushNotificationService>();
+
+                final title = '⏰ Duty Reminder';
+                final body = '${member?.name ?? 'Hey'} — it\'s your turn! Please complete your assigned mess task.';
+
+                // 1. Schedule local notification on this device
                 await notifService.scheduleReminder(
                   id: (rotation.hashCode ^ DateTime.now().millisecondsSinceEpoch) & 0x7FFFFFFF,
-                  title: '⏰ Duty Reminder',
-                  body: '${member?.name ?? 'You'} — it\'s your turn! Please complete your assigned task.',
+                  title: title,
+                  body: body,
                   scheduledDate: selectedDate,
                 );
+
+                // 2. Send push to the assigned member via FCM relay API
+                if (member != null) {
+                  await pushService.sendToUser(
+                    userId: member!.uid,
+                    title: title,
+                    body: body,
+                  );
+                }
+
                 Get.snackbar(
                   'Reminder Set',
-                  'Notification scheduled for ${selectedTime.format(context)}',
+                  'Notification scheduled for ${selectedTime.format(context)} & push sent to ${member?.name ?? 'member'}',
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: AppColors.success,
                   colorText: Colors.white,

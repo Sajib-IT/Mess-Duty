@@ -9,6 +9,7 @@ import 'app/services/auth_service.dart';
 import 'app/services/mess_service.dart';
 import 'app/services/task_service.dart';
 import 'app/services/notification_service.dart';
+import 'app/services/push_notification_service.dart';
 import 'app/controllers/auth_controller.dart';
 
 void main() async {
@@ -26,6 +27,8 @@ void main() async {
   final notifService = NotificationService();
   Get.put(notifService, permanent: true);
   await notifService.initialize();
+
+  Get.put(PushNotificationService(), permanent: true);
 
   // AuthController is permanent — manages auth state for entire app lifetime
   Get.put(AuthController(), permanent: true);

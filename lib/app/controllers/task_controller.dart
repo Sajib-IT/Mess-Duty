@@ -4,11 +4,16 @@ import '../models/user_model.dart';
 import '../services/task_service.dart';
 import '../services/auth_service.dart';
 import '../services/mess_service.dart';
+import '../services/push_notification_service.dart';
+import '../utils/app_constants.dart';
 
 class TaskController extends GetxController {
   final _taskService = Get.find<TaskService>();
   final _authService = Get.find<AuthService>();
   final _messService = Get.find<MessService>();
+  PushNotificationService? get _push => Get.isRegistered<PushNotificationService>()
+      ? Get.find<PushNotificationService>()
+      : null;
 
   final tasks = <TaskModel>[].obs;
   final taskGroups = <TaskGroupModel>[].obs;
@@ -53,7 +58,6 @@ class TaskController extends GetxController {
 
   Future<void> submitCompletion(DutyRotationModel rotation) async {
     try {
-      // Total voters = all members except the requester
       final totalVoters = members.where((m) => m.uid != currentUid).length;
       await _taskService.submitCompletionRequest(
         rotationId: rotation.rotationId,
@@ -62,6 +66,18 @@ class TaskController extends GetxController {
         requestedBy: currentUid,
         totalVoters: totalVoters,
       );
+
+      // Push notify all other members to verify
+      final otherUids = members.where((m) => m.uid != currentUid).map((m) => m.uid).toList();
+      final myName = members.firstWhereOrNull((m) => m.uid == currentUid)?.name ?? 'A member';
+      final task = tasks.firstWhereOrNull((t) => t.taskId == rotation.taskId);
+      final taskLabel = task?.taskType.label ?? 'a task';
+      await _push?.sendToUsers(
+        userIds: otherUids,
+        title: '✅ Verify Task Completion',
+        body: '$myName says they completed $taskLabel. Please verify!',
+      );
+
       Get.snackbar('Request Sent', 'Waiting for member verification.',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
