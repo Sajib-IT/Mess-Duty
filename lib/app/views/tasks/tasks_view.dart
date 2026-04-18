@@ -110,6 +110,33 @@ class _TaskCard extends StatelessWidget {
                   : null;
               final isMe = rotation?.assignedUserId == authCtrl.currentUser.value?.uid;
 
+              // Compute next 2 members in rotation (skip away members)
+              final available = group.memberIds
+                  .where((id) => members.any((m) => m.uid == id && !m.isAway))
+                  .toList();
+              final nextMembers = <UserModel>[];
+              if (available.isNotEmpty) {
+                // currentRotationIndex already points to who's NEXT after current
+                final startIdx = group.currentRotationIndex % available.length;
+                for (int offset = 0; offset < 2 && offset < available.length - 1; offset++) {
+                  final uid = available[(startIdx + offset) % available.length];
+                  // skip the currently assigned person
+                  if (uid == rotation?.assignedUserId) continue;
+                  final m = members.firstWhereOrNull((m) => m.uid == uid);
+                  if (m != null) nextMembers.add(m);
+                  if (nextMembers.length == 2) break;
+                }
+                // fallback: if we didn't get 2, fill from rotation order
+                if (nextMembers.length < 2) {
+                  for (int offset = 0; offset < available.length && nextMembers.length < 2; offset++) {
+                    final uid = available[(startIdx + offset) % available.length];
+                    if (uid == rotation?.assignedUserId) continue;
+                    final m = members.firstWhereOrNull((m) => m.uid == uid);
+                    if (m != null && !nextMembers.any((n) => n.uid == m.uid)) nextMembers.add(m);
+                  }
+                }
+              }
+
               return Container(
                 margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 decoration: BoxDecoration(
@@ -158,7 +185,7 @@ class _TaskCard extends StatelessWidget {
                     if (rotation != null) ...[
                       const Divider(height: 1),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+                        padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
                         child: Row(
                           children: [
                             AppAvatar(
@@ -200,6 +227,49 @@ class _TaskCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // ── Up Next ───────────────────────────────────────
+                      if (nextMembers.isNotEmpty) ...[
+                        Divider(height: 1, color: Colors.grey.shade100),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+                          child: Row(
+                            children: [
+                              Icon(Icons.skip_next, size: 14, color: Colors.grey.shade400),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Up next: ',
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                              ),
+                              ...nextMembers.asMap().entries.map((e) {
+                                final idx = e.key;
+                                final m = e.value;
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (idx > 0)
+                                      Text(' → ', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                                    AppAvatar(
+                                      photoUrl: m.photoUrl,
+                                      name: m.name,
+                                      radius: 10,
+                                      backgroundColor: _color.withValues(alpha: 0.6),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      m.name.split(' ').first,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
                     ] else ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
