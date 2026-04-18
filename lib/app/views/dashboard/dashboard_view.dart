@@ -554,6 +554,17 @@ class _CompletionRequestCard extends StatelessWidget {
     required this.authCtrl,
   });
 
+  static Color _taskColor(TaskType? type) {
+    switch (type) {
+      case TaskType.teaMaking: return AppColors.teaMaking;
+      case TaskType.bathroomCleaning: return AppColors.bathroomCleaning;
+      case TaskType.basinCleaning: return AppColors.basinCleaning;
+      case TaskType.waterFilterRefill: return AppColors.waterFilter;
+      case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      default: return AppColors.warning;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUid = authCtrl.currentUser.value?.uid;
@@ -561,50 +572,173 @@ class _CompletionRequestCard extends StatelessWidget {
     final hasAccepted = completion.acceptedBy.contains(currentUid);
     final accepted = completion.acceptedBy.length;
     final requiredCount = completion.requiredAcceptances;
+    final progress = (accepted / requiredCount).clamp(0.0, 1.0);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    final task = taskCtrl.tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
+    final requester = taskCtrl.members.firstWhereOrNull((m) => m.uid == completion.requestedBy);
+    final taskType = task?.taskType;
+    final color = _taskColor(taskType);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.pending_actions, color: AppColors.warning),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // ── Row 1: Task icon + name + verification count ──────────
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(child: Text(taskType?.icon ?? '📋', style: const TextStyle(fontSize: 22))),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        taskType?.label ?? 'Unknown Task',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Completion Verification',
+                        style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: (progress >= 1 ? AppColors.success : AppColors.warning).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$accepted / $requiredCount ✓',
+                    style: TextStyle(
+                      color: progress >= 1 ? AppColors.success : AppColors.warning,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+
+            // ── Row 2: Who submitted ───────────────────────────────────
+            Row(
+              children: [
+                AppAvatar(photoUrl: requester?.photoUrl, name: requester?.name ?? '?', radius: 14),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      children: [
+                        TextSpan(
+                          text: isRequester ? 'You' : (requester?.name ?? 'Someone'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                        const TextSpan(text: ' submitted a completion request'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // ── Progress bar ──────────────────────────────────────────
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation(progress >= 1 ? AppColors.success : AppColors.warning),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Needs $requiredCount member verifications to mark as done',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+            ),
+
+            // ── Action buttons ────────────────────────────────────────
+            if (!isRequester && !hasAccepted) ...[
+              const SizedBox(height: 10),
+              Row(
                 children: [
-                  const Text('Task Completion Request',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  Text(
-                    'Verified by $accepted/$requiredCount members',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => taskCtrl.rejectCompletion(completion.completionId),
+                      icon: const Icon(Icons.close, size: 16, color: AppColors.error),
+                      label: const Text('Reject', style: TextStyle(color: AppColors.error)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => taskCtrl.acceptCompletion(completion),
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text('Verify'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            if (!isRequester && !hasAccepted)
+            ] else if (isRequester) ...[
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.error, size: 20),
-                    onPressed: () => taskCtrl.rejectCompletion(completion.completionId),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => taskCtrl.acceptCompletion(completion),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      minimumSize: Size.zero,
-                      backgroundColor: AppColors.success,
-                    ),
-                    child: const Text('Verify', style: TextStyle(fontSize: 12)),
+                  const Icon(Icons.hourglass_top, size: 14, color: AppColors.warning),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Waiting for ${requiredCount - accepted} more verification${(requiredCount - accepted) != 1 ? 's' : ''}',
+                    style: const TextStyle(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
-              )
-            else if (isRequester)
-              const Text('Waiting...', style: TextStyle(color: AppColors.warning, fontSize: 12))
-            else
-              const Icon(Icons.check_circle, color: AppColors.success),
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  Icon(Icons.check_circle, size: 14, color: AppColors.success),
+                  SizedBox(width: 6),
+                  Text('You verified this task',
+                      style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
           ],
         ),
       ),

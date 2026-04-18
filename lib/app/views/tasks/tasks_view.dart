@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../controllers/task_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../models/task_models.dart';
+import '../../models/user_model.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/shared_widgets.dart';
@@ -194,7 +196,7 @@ class _TaskCard extends StatelessWidget {
                                 child: const Text('Mark Done', style: TextStyle(fontSize: 12)),
                               )
                             else if (!isMe && rotation.status == RotationStatus.pending)
-                              _ContactButtons(member: assignedMember),
+                              _ContactButtons(member: assignedMember, rotation: rotation),
                           ],
                         ),
                       ),
@@ -227,40 +229,172 @@ class _TaskCard extends StatelessWidget {
 }
 
 class _ContactButtons extends StatelessWidget {
-  final dynamic member;
-  const _ContactButtons({this.member});
+  final UserModel? member;
+  final DutyRotationModel? rotation;
+  const _ContactButtons({this.member, this.rotation});
+
+  Future<void> _launch(Uri uri) async {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Get.snackbar('Error', 'Could not open app', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void _showReminderDialog(BuildContext context) {
+    DateTime selectedDate = DateTime.now().add(const Duration(hours: 1));
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(selectedDate);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Set Reminder'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Send a scheduled notification to ${member?.name ?? 'this member'} reminding them of their duty.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_today, color: AppColors.primary),
+                title: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 30)),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      selectedDate = DateTime(
+                        picked.year, picked.month, picked.day,
+                        selectedTime.hour, selectedTime.minute,
+                      );
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.access_time, color: AppColors.primary),
+                title: Text(selectedTime.format(ctx)),
+                onTap: () async {
+                  final picked = await showTimePicker(context: ctx, initialTime: selectedTime);
+                  if (picked != null) {
+                    setState(() {
+                      selectedTime = picked;
+                      selectedDate = DateTime(
+                        selectedDate.year, selectedDate.month, selectedDate.day,
+                        picked.hour, picked.minute,
+                      );
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final notifService = Get.find<NotificationService>();
+                await notifService.scheduleReminder(
+                  id: rotation.hashCode ^ DateTime.now().millisecondsSinceEpoch,
+                  title: '⏰ Duty Reminder',
+                  body: '${member?.name ?? 'You'} — it\'s your turn! Please complete your assigned task.',
+                  scheduledDate: selectedDate,
+                );
+                Get.snackbar(
+                  'Reminder Set',
+                  'Notification scheduled for ${selectedTime.format(context)}',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppColors.success,
+                  colorText: Colors.white,
+                );
+              },
+              child: const Text('Set Reminder'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (member == null) return const SizedBox();
+    final phone = (member!.phone ?? '').replaceAll(RegExp(r'[^0-9+]'), '');
+    final email = member!.email;
+
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.notifications_active, size: 20),
-      tooltip: 'Remind',
+      icon: const Icon(Icons.notifications_active_outlined, size: 22, color: AppColors.primary),
+      tooltip: 'Remind / Contact',
       onSelected: (v) async {
-        Uri? uri;
         switch (v) {
           case 'call':
-            uri = Uri(scheme: 'tel', path: member.phone);
+            if (phone.isNotEmpty) await _launch(Uri(scheme: 'tel', path: phone));
             break;
           case 'email':
-            uri = Uri(scheme: 'mailto', path: member.email);
+            await _launch(Uri(
+              scheme: 'mailto',
+              path: email,
+              queryParameters: {'subject': 'MessDuty Reminder', 'body': 'Hey, it\'s your turn for a mess duty!'},
+            ));
             break;
           case 'whatsapp':
-            uri = Uri.parse('https://wa.me/${member.phone.replaceAll(RegExp(r'[^0-9]'), '')}');
+            if (phone.isNotEmpty) {
+              final cleaned = phone.startsWith('+') ? phone.substring(1) : phone;
+              await _launch(Uri.parse('https://wa.me/$cleaned?text=Hey+it\'s+your+turn+for+a+mess+duty!'));
+            }
             break;
-          case 'messenger':
-            uri = Uri.parse('https://m.me/');
+          case 'reminder':
+            _showReminderDialog(context);
             break;
-        }
-        if (uri != null && await canLaunchUrl(uri)) {
-          await launchUrl(uri);
         }
       },
       itemBuilder: (ctx) => [
-        const PopupMenuItem(value: 'call', child: ListTile(leading: Icon(Icons.call), title: Text('Call'))),
-        const PopupMenuItem(value: 'email', child: ListTile(leading: Icon(Icons.email), title: Text('Email'))),
-        const PopupMenuItem(value: 'whatsapp', child: ListTile(leading: Icon(Icons.message), title: Text('WhatsApp'))),
-        const PopupMenuItem(value: 'messenger', child: ListTile(leading: Icon(Icons.chat), title: Text('Messenger'))),
+        PopupMenuItem(
+          value: 'reminder',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.alarm, color: AppColors.primary),
+            title: const Text('Set Reminder'),
+            subtitle: const Text('Schedule a notification', style: TextStyle(fontSize: 11)),
+          ),
+        ),
+        if (phone.isNotEmpty) ...[
+          PopupMenuItem(
+            value: 'call',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.call, color: AppColors.success),
+              title: const Text('Call'),
+              subtitle: Text(phone, style: const TextStyle(fontSize: 11)),
+            ),
+          ),
+          PopupMenuItem(
+            value: 'whatsapp',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.message, color: Color(0xFF25D366)),
+              title: const Text('WhatsApp'),
+              subtitle: Text(phone, style: const TextStyle(fontSize: 11)),
+            ),
+          ),
+        ],
+        PopupMenuItem(
+          value: 'email',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.email, color: AppColors.info),
+            title: const Text('Email'),
+            subtitle: Text(email, style: const TextStyle(fontSize: 11)),
+          ),
+        ),
       ],
     );
   }
