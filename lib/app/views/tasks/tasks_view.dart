@@ -303,7 +303,7 @@ class _ContactButtons extends StatelessWidget {
                 Navigator.pop(ctx);
                 final notifService = Get.find<NotificationService>();
                 await notifService.scheduleReminder(
-                  id: rotation.hashCode ^ DateTime.now().millisecondsSinceEpoch,
+                  id: (rotation.hashCode ^ DateTime.now().millisecondsSinceEpoch) & 0x7FFFFFFF,
                   title: '⏰ Duty Reminder',
                   body: '${member?.name ?? 'You'} — it\'s your turn! Please complete your assigned task.',
                   scheduledDate: selectedDate,
