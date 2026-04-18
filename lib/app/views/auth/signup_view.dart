@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_helpers.dart';
+import '../../widgets/phone_field.dart';
 
 class SignupView extends StatelessWidget {
   const SignupView({super.key});
@@ -18,6 +19,7 @@ class SignupView extends StatelessWidget {
     final formKey = GlobalKey<FormState>();
     final obscure = true.obs;
     final obscureConfirm = true.obs;
+    final selectedDialCode = '+880'.obs; // default Bangladesh
 
     return Scaffold(
       body: Container(
@@ -117,14 +119,15 @@ class SignupView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          TextFormField(
+                          PhoneField(
                             controller: phoneCtrl,
-                            keyboardType: TextInputType.phone,
-                            validator: Validators.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Phone Number',
-                              prefixIcon: Icon(Icons.phone_outlined),
-                            ),
+                            initialDialCode: '+880',
+                            onDialCodeChanged: (code) => selectedDialCode.value = code,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Phone is required';
+                              if (v.trim().length < 6) return 'Enter a valid phone number';
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 14),
                           Obx(() => TextFormField(
@@ -168,7 +171,10 @@ class SignupView extends StatelessWidget {
                                             ctrl.signUp(
                                               name: nameCtrl.text.trim(),
                                               email: emailCtrl.text.trim(),
-                                              phone: phoneCtrl.text.trim(),
+                                              phone: PhoneField.combine(
+                                                selectedDialCode.value,
+                                                phoneCtrl.text.trim(),
+                                              ),
                                               password: passCtrl.text,
                                             );
                                           }

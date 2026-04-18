@@ -5,6 +5,7 @@ import '../../controllers/auth_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_helpers.dart';
 import '../../widgets/shared_widgets.dart';
+import '../../widgets/phone_field.dart';
 import '../../routes/app_routes.dart';
 
 class ProfileView extends StatelessWidget {
@@ -246,7 +247,10 @@ class ProfileView extends StatelessWidget {
 
   void _editProfile(BuildContext context, ProfileController ctrl, dynamic user) {
     final nameCtrl = TextEditingController(text: user.name);
-    final phoneCtrl = TextEditingController(text: user.phone);
+    // Parse existing phone into dial code + local number
+    final parsed = PhoneField.parse(user.phone ?? '');
+    final phoneCtrl = TextEditingController(text: parsed.value);
+    final selectedDialCode = parsed.key.obs;
 
     Get.bottomSheet(
       Container(
@@ -296,11 +300,15 @@ class ProfileView extends StatelessWidget {
               decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person)),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone)),
-            ),
+            Obx(() => PhoneField(
+                  controller: phoneCtrl,
+                  initialDialCode: selectedDialCode.value,
+                  onDialCodeChanged: (code) => selectedDialCode.value = code,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Phone is required';
+                    return null;
+                  },
+                )),
             const SizedBox(height: 20),
             Obx(() => SizedBox(
                   width: double.infinity,
@@ -310,7 +318,10 @@ class ProfileView extends StatelessWidget {
                         : () {
                             ctrl.updateProfile(
                               name: nameCtrl.text.trim(),
-                              phone: phoneCtrl.text.trim(),
+                              phone: PhoneField.combine(
+                                selectedDialCode.value,
+                                phoneCtrl.text.trim(),
+                              ),
                             );
                             Get.back();
                           },
