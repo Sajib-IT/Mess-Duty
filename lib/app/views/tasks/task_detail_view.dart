@@ -14,35 +14,49 @@ class TaskDetailView extends StatefulWidget {
 }
 
 class _TaskDetailViewState extends State<TaskDetailView> {
-  late TaskModel task;
+  TaskModel? task; // nullable — may be null when opened without arguments
   late TaskController taskCtrl;
-  List<Map<String, dynamic>> groups = [];
+  List<Map<String, dynamic>> groups = <Map<String, dynamic>>[];
 
   @override
   void initState() {
     super.initState();
     taskCtrl = Get.find<TaskController>();
-    task = Get.arguments as TaskModel;
-    _initGroups();
+    // Safely cast arguments — null when opened from AppBar without a task
+    task = Get.arguments is TaskModel ? Get.arguments as TaskModel : null;
+    if (task != null) _initGroups();
+  }
+
+  void _loadTask(TaskModel selected) {
+    setState(() {
+      task = selected;
+      _initGroups();
+    });
   }
 
   void _initGroups() {
-    final existing = taskCtrl.getGroupsForTask(task.taskId);
+    final existing = taskCtrl.getGroupsForTask(task!.taskId);
     if (existing.isNotEmpty) {
-      groups = existing.map((g) => {
+      groups = existing.map((g) => <String, dynamic>{
         'label': g.label,
         'memberIds': List<String>.from(g.memberIds),
       }).toList();
     } else {
-      groups = [
-        {'label': task.taskType.label, 'memberIds': List<String>.from(taskCtrl.members.map((m) => m.uid))},
+      groups = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'label': task!.taskType.label,
+          'memberIds': List<String>.from(taskCtrl.members.map((m) => m.uid)),
+        },
       ];
     }
   }
 
   void _addGroup() {
     setState(() {
-      groups.add({'label': 'Group ${groups.length + 1}', 'memberIds': <String>[]});
+      groups.add(<String, dynamic>{
+        'label': 'Group ${groups.length + 1}',
+        'memberIds': <String>[],
+      });
     });
   }
 
@@ -62,24 +76,124 @@ class _TaskDetailViewState extends State<TaskDetailView> {
   }
 
   Future<void> _save() async {
-    await taskCtrl.updateTaskGroups(task.taskId, groups);
+    if (task == null) return;
+    await taskCtrl.updateTaskGroups(task!.taskId, groups);
     Get.back();
   }
 
   @override
   Widget build(BuildContext context) {
+    // ── No task selected yet: show task picker ─────────────────────────────
+    if (task == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Configure Task')),
+        body: Obx(() {
+          final tasks = taskCtrl.tasks;
+          if (tasks.isEmpty) {
+            return const EmptyStateWidget(
+              icon: Icons.task_outlined,
+              title: 'No tasks found',
+              subtitle: 'Tasks are created automatically when a mess is set up.',
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Select a task to configure',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: tasks.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (ctx, i) {
+                    final t = tasks[i];
+                    final color = _taskColor(t.taskType);
+                    final groups = taskCtrl.getGroupsForTask(t.taskId);
+                    return InkWell(
+                      onTap: () => _loadTask(t),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(t.taskType.icon, style: const TextStyle(fontSize: 26)),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    t.taskType.label,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${groups.length} group${groups.length != 1 ? 's' : ''}',
+                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }),
+      );
+    }
+
+    // ── Task selected: show group configurator ─────────────────────────────
     final members = taskCtrl.members;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Configure: ${task.taskType.label}'),
+        title: Row(
+          children: [
+            Text(task!.taskType.icon, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(task!.taskType.label),
+          ],
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _save),
+          IconButton(icon: const Icon(Icons.save), onPressed: _save, tooltip: 'Save'),
         ],
       ),
       body: Column(
         children: [
-          // Info
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(14),
@@ -104,14 +218,17 @@ class _TaskDetailViewState extends State<TaskDetailView> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                ...List.generate(groups.length, (i) => _GroupCard(
-                  groupIndex: i,
-                  groupData: groups[i],
-                  members: members,
-                  onRemove: groups.length > 1 ? () => _removeGroup(i) : null,
-                  onToggleMember: (uid) => _toggleMember(i, uid),
-                  onLabelChanged: (v) => setState(() => groups[i]['label'] = v),
-                )),
+                ...List.generate(
+                  groups.length,
+                  (i) => _GroupCard(
+                    groupIndex: i,
+                    groupData: groups[i],
+                    members: members,
+                    onRemove: groups.length > 1 ? () => _removeGroup(i) : null,
+                    onToggleMember: (uid) => _toggleMember(i, uid),
+                    onLabelChanged: (v) => setState(() => groups[i]['label'] = v),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _addGroup,
@@ -135,6 +252,16 @@ class _TaskDetailViewState extends State<TaskDetailView> {
         ),
       ),
     );
+  }
+
+  static Color _taskColor(TaskType type) {
+    switch (type) {
+      case TaskType.teaMaking: return AppColors.teaMaking;
+      case TaskType.bathroomCleaning: return AppColors.bathroomCleaning;
+      case TaskType.basinCleaning: return AppColors.basinCleaning;
+      case TaskType.waterFilterRefill: return AppColors.waterFilter;
+      case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+    }
   }
 }
 

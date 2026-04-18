@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/history_controller.dart';
 import '../../controllers/task_controller.dart';
 import '../../models/task_models.dart';
+import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/app_helpers.dart';
@@ -109,8 +110,8 @@ class _TimelineTab extends StatelessWidget {
 
 class _HistoryTile extends StatelessWidget {
   final DutyRotationModel rotation;
-  final dynamic task;
-  final dynamic member;
+  final TaskModel? task;
+  final UserModel? member;
 
   const _HistoryTile({required this.rotation, this.task, this.member});
 
@@ -145,10 +146,19 @@ class _HistoryTile extends StatelessWidget {
           children: [
             AppAvatar(photoUrl: member?.photoUrl, name: member?.name ?? '?', radius: 10),
             const SizedBox(width: 6),
-            Text(member?.name ?? 'Unknown', style: const TextStyle(fontSize: 12)),
-            const SizedBox(width: 8),
-            Text('• ${AppHelpers.formatShortDate(rotation.scheduledDate)}',
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            Flexible(
+              child: Text(
+                member?.name ?? 'Unknown',
+                style: const TextStyle(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '• ${AppHelpers.formatShortDate(rotation.scheduledDate)}',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
         trailing: Container(

@@ -119,36 +119,39 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 72, color: Colors.grey.shade300),
+              const SizedBox(height: 16),
               Text(
-                subtitle!,
+                title,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade400,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade400,
+                      ),
+                ),
+              ],
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 24),
+                ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
+              ],
             ],
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
-          ],
+          ),
         ),
       ),
     );

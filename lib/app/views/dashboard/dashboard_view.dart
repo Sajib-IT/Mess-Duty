@@ -5,6 +5,8 @@ import '../../controllers/task_controller.dart';
 import '../../controllers/notification_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/history_controller.dart';
+import '../../models/task_models.dart';
+import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/shared_widgets.dart';
@@ -416,9 +418,9 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _DutyCard extends StatelessWidget {
-  final dynamic rotation;
-  final dynamic task;
-  final dynamic member;
+  final DutyRotationModel rotation;
+  final TaskModel? task;
+  final UserModel? member;
   final bool isMe;
   final TaskController taskCtrl;
 
@@ -501,7 +503,7 @@ class _DutyCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (isMe && rotation.status.value == 'pending')
+            if (isMe && rotation.status == RotationStatus.pending)
               ElevatedButton(
                 onPressed: () => taskCtrl.submitCompletion(rotation),
                 style: ElevatedButton.styleFrom(
@@ -511,7 +513,7 @@ class _DutyCard extends StatelessWidget {
                 ),
                 child: const Text('Done', style: TextStyle(fontSize: 12)),
               )
-            else if (rotation.status.value == 'inProgress')
+            else if (rotation.status == RotationStatus.inProgress)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -542,7 +544,7 @@ class _DutyCard extends StatelessWidget {
 }
 
 class _CompletionRequestCard extends StatelessWidget {
-  final dynamic completion;
+  final TaskCompletionModel completion;
   final TaskController taskCtrl;
   final AuthController authCtrl;
 
@@ -554,10 +556,11 @@ class _CompletionRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRequester = completion.requestedBy == authCtrl.currentUser.value?.uid;
-    final hasAccepted = completion.acceptedBy.contains(authCtrl.currentUser.value?.uid);
+    final currentUid = authCtrl.currentUser.value?.uid;
+    final isRequester = completion.requestedBy == currentUid;
+    final hasAccepted = completion.acceptedBy.contains(currentUid);
     final accepted = completion.acceptedBy.length;
-    final required = completion.requiredAcceptances;
+    final requiredCount = completion.requiredAcceptances;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -574,7 +577,7 @@ class _CompletionRequestCard extends StatelessWidget {
                   const Text('Task Completion Request',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   Text(
-                    'Verified by $accepted/$required members',
+                    'Verified by $accepted/$requiredCount members',
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                   ),
                 ],
