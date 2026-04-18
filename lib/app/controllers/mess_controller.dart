@@ -18,6 +18,9 @@ class MessController extends GetxController {
   final isLoading = false.obs;
   final isSearching = false.obs;
 
+  // Members selected during mess creation
+  final selectedMembers = <UserModel>[].obs;
+
   String get currentUid => _authService.currentFirebaseUser?.uid ?? '';
 
   @override
@@ -62,10 +65,12 @@ class MessController extends GetxController {
         address: address,
         description: description,
         createdBy: currentUid,
+        initialMemberIds: selectedMembers.map((u) => u.uid).toList(),
       );
-      // Initialize default tasks
+      // Initialize default tasks with all members
       final taskService = Get.find<TaskService>();
       await taskService.initializeDefaultTasks(mess.messId, mess.memberIds);
+      selectedMembers.clear();
       currentMess.value = mess;
       Get.offAllNamed(Routes.DASHBOARD);
     } catch (e) {
@@ -74,6 +79,16 @@ class MessController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  void toggleSelectMember(UserModel user) {
+    if (selectedMembers.any((m) => m.uid == user.uid)) {
+      selectedMembers.removeWhere((m) => m.uid == user.uid);
+    } else {
+      selectedMembers.add(user);
+    }
+  }
+
+  bool isMemberSelected(String uid) => selectedMembers.any((m) => m.uid == uid);
 
   Future<void> searchUsers(String query) async {
     isSearching.value = true;

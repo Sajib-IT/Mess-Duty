@@ -13,23 +13,40 @@ class MessService extends GetxService {
     required String address,
     required String description,
     required String createdBy,
+    List<String> initialMemberIds = const [],
   }) async {
     final ref = _firestore.collection(Collections.messes).doc();
+    // Creator always included; add selected members directly
+    final allMembers = [createdBy, ...initialMemberIds.where((id) => id != createdBy)];
+
     final mess = MessModel(
       messId: ref.id,
       name: name,
       address: address,
       description: description,
       createdBy: createdBy,
-      memberIds: [createdBy],
+      memberIds: allMembers,
       createdAt: DateTime.now(),
     );
     final batch = _firestore.batch();
     batch.set(ref, mess.toMap());
+
+    // Set messId on creator
     batch.update(_firestore.collection(Collections.users).doc(createdBy), {
       'messId': ref.id,
       'daysInMess': 0,
     });
+
+    // Directly add selected members (no invitation needed — creator adds them)
+    for (final memberId in initialMemberIds) {
+      if (memberId != createdBy) {
+        batch.update(_firestore.collection(Collections.users).doc(memberId), {
+          'messId': ref.id,
+          'daysInMess': 0,
+        });
+      }
+    }
+
     await batch.commit();
     return mess;
   }
