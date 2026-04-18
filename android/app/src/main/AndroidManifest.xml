@@ -1,6 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- awesome_notifications required permissions -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- FCM -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="mess_duty"
+        android:label="MessDuty"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
