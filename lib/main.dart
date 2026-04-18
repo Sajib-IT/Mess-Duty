@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'MessDuty',
       debugShowCheckedModeBanner: false,
-      enableLog: false,
+      enableLog: true,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.light,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_model.dart';
@@ -17,22 +18,26 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _authService.authStateChanges.listen((user) async {
-      if (user != null) {
-        final userModel = await _authService.getUserModel(user.uid);
-        currentUser.value = userModel;
-        if (userModel != null) {
-          final target = userModel.messId != null ? Routes.DASHBOARD : Routes.LANDING;
-          if (Get.currentRoute != target) {
-            Get.offAllNamed(target);
+    // Wait until GetMaterialApp is fully mounted before listening to auth state.
+    // This prevents "contextless navigation" errors when Firebase fires immediately.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _authService.authStateChanges.listen((user) async {
+        if (user != null) {
+          final userModel = await _authService.getUserModel(user.uid);
+          currentUser.value = userModel;
+          if (userModel != null) {
+            final target = userModel.messId != null ? Routes.DASHBOARD : Routes.LANDING;
+            if (Get.currentRoute != target) {
+              Get.offAllNamed(target);
+            }
+          }
+        } else {
+          currentUser.value = null;
+          if (Get.currentRoute != Routes.LOGIN) {
+            Get.offAllNamed(Routes.LOGIN);
           }
         }
-      } else {
-        currentUser.value = null;
-        if (Get.currentRoute != Routes.LOGIN) {
-          Get.offAllNamed(Routes.LOGIN);
-        }
-      }
+      });
     });
   }
 
