@@ -693,7 +693,7 @@ class _CompletionRequestCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => taskCtrl.rejectCompletion(completion.completionId),
+                      onPressed: () => taskCtrl.rejectCompletion(completion),
                       icon: const Icon(Icons.close, size: 16, color: AppColors.error),
                       label: const Text('Reject', style: TextStyle(color: AppColors.error)),
                       style: OutlinedButton.styleFrom(

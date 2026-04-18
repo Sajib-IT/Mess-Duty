@@ -109,7 +109,7 @@ class _CompletionCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 OutlinedButton(
-                  onPressed: () => taskCtrl.rejectCompletion(completion.completionId),
+                  onPressed: () => taskCtrl.rejectCompletion(completion),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.error),
                     foregroundColor: AppColors.error,

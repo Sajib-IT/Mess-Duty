@@ -150,8 +150,8 @@ class TaskService extends GetxService {
     required String taskId,
     required String messId,
     required String requestedBy,
+    required int totalVoters, // total mess members excluding requester
   }) async {
-    // Update rotation status
     await _firestore.collection(Collections.dutyRotations).doc(rotationId).update({
       'status': 'inProgress',
     });
@@ -163,6 +163,8 @@ class TaskService extends GetxService {
       'messId': messId,
       'requestedBy': requestedBy,
       'acceptedBy': [],
+      'rejectedBy': [],
+      'totalVoters': totalVoters,
       'requiredAcceptances': 2,
       'status': 'pending',
       'requestedAt': Timestamp.now(),
@@ -170,6 +172,8 @@ class TaskService extends GetxService {
     });
   }
 
+  /// Accept threshold: 40% of totalVoters accepted → approved
+  /// Reject threshold: 70% of totalVoters rejected → revert to pending (redo)
   Future<void> acceptCompletion({
     required String completionId,
     required String uid,
@@ -178,50 +182,62 @@ class TaskService extends GetxService {
     required List<UserModel> members,
   }) async {
     final updatedAccepted = [...completion.acceptedBy, uid];
+    final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
+    final acceptRate = updatedAccepted.length / total;
     final batch = _firestore.batch();
 
-    if (updatedAccepted.length >= completion.requiredAcceptances) {
-      // Mark completion approved
+    if (acceptRate >= 0.4) {
+      // ✅ 40%+ accepted → task approved
       batch.update(_firestore.collection(Collections.taskCompletions).doc(completionId), {
         'acceptedBy': updatedAccepted,
         'status': 'approved',
         'completedAt': Timestamp.now(),
       });
-      // Mark rotation completed
       batch.update(_firestore.collection(Collections.dutyRotations).doc(completion.rotationId), {
         'status': 'completed',
       });
-      // Increment user duties
       batch.update(_firestore.collection(Collections.users).doc(completion.requestedBy), {
         'totalDutiesDone': FieldValue.increment(1),
       });
+      await batch.commit();
+      if (group != null) await generateNextRotation(group, members);
     } else {
+      // Still accumulating votes
       batch.update(_firestore.collection(Collections.taskCompletions).doc(completionId), {
         'acceptedBy': updatedAccepted,
       });
-    }
-    await batch.commit();
-
-    // Generate next rotation
-    if (updatedAccepted.length >= completion.requiredAcceptances && group != null) {
-      await generateNextRotation(group, members);
+      await batch.commit();
     }
   }
 
-  Future<void> rejectCompletion(String completionId) async {
-    await _firestore.collection(Collections.taskCompletions).doc(completionId).update({
-      'status': 'rejected',
-    });
-    // Revert rotation to pending
-    final doc = await _firestore.collection(Collections.taskCompletions).doc(completionId).get();
-    if (doc.exists) {
-      final rotationId = doc.data()?['rotationId'];
-      if (rotationId != null) {
-        await _firestore.collection(Collections.dutyRotations).doc(rotationId).update({
-          'status': 'pending',
-        });
-      }
+  /// Reject: track rejectedBy. If 70%+ rejected → mark rejected, revert rotation to pending (must redo)
+  Future<void> rejectCompletion({
+    required String completionId,
+    required String uid,
+    required TaskCompletionModel completion,
+  }) async {
+    final updatedRejected = [...completion.rejectedBy, uid];
+    final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
+    final rejectRate = updatedRejected.length / total;
+    final batch = _firestore.batch();
+
+    if (rejectRate >= 0.7) {
+      // ❌ 70%+ rejected → task failed, member must redo
+      batch.update(_firestore.collection(Collections.taskCompletions).doc(completionId), {
+        'rejectedBy': updatedRejected,
+        'status': 'rejected',
+      });
+      // Revert rotation back to pending so the same person must do it again
+      batch.update(_firestore.collection(Collections.dutyRotations).doc(completion.rotationId), {
+        'status': 'pending',
+      });
+    } else {
+      // Still accumulating rejections
+      batch.update(_firestore.collection(Collections.taskCompletions).doc(completionId), {
+        'rejectedBy': updatedRejected,
+      });
     }
+    await batch.commit();
   }
 
   Stream<List<TaskCompletionModel>> getCompletionRequestsStream(String messId) {

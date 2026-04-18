@@ -53,11 +53,14 @@ class TaskController extends GetxController {
 
   Future<void> submitCompletion(DutyRotationModel rotation) async {
     try {
+      // Total voters = all members except the requester
+      final totalVoters = members.where((m) => m.uid != currentUid).length;
       await _taskService.submitCompletionRequest(
         rotationId: rotation.rotationId,
         taskId: rotation.taskId,
         messId: rotation.messId,
         requestedBy: currentUid,
+        totalVoters: totalVoters,
       );
       Get.snackbar('Request Sent', 'Waiting for member verification.',
           snackPosition: SnackPosition.BOTTOM);
@@ -86,15 +89,49 @@ class TaskController extends GetxController {
         group: group,
         members: members,
       );
-      Get.snackbar('Accepted', 'You verified the task completion.', snackPosition: SnackPosition.BOTTOM);
+      final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
+      final newCount = completion.acceptedBy.length + 1;
+      final pct = (newCount / total * 100).toStringAsFixed(0);
+      Get.snackbar(
+        newCount / total >= 0.4 ? '✅ Task Approved!' : 'Verified',
+        newCount / total >= 0.4
+            ? 'Task marked as done ($pct% accepted).'
+            : 'You verified the task. ($pct% so far)',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
       Get.snackbar('Error', e.toString());
     }
   }
 
-  Future<void> rejectCompletion(String completionId) async {
-    await _taskService.rejectCompletion(completionId);
-    Get.snackbar('Rejected', 'Task completion rejected.', snackPosition: SnackPosition.BOTTOM);
+  Future<void> rejectCompletion(TaskCompletionModel completion) async {
+    if (completion.rejectedBy.contains(currentUid)) {
+      Get.snackbar('Already Rejected', 'You already rejected this task.');
+      return;
+    }
+    if (completion.requestedBy == currentUid) {
+      Get.snackbar('Not Allowed', 'You cannot reject your own request.');
+      return;
+    }
+    try {
+      await _taskService.rejectCompletion(
+        completionId: completion.completionId,
+        uid: currentUid,
+        completion: completion,
+      );
+      final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
+      final newCount = completion.rejectedBy.length + 1;
+      final pct = (newCount / total * 100).toStringAsFixed(0);
+      Get.snackbar(
+        newCount / total >= 0.7 ? '❌ Task Rejected' : 'Rejected',
+        newCount / total >= 0.7
+            ? 'Task rejected ($pct% rejected). Member must redo it.'
+            : 'Your rejection recorded. ($pct% rejected so far)',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    }
   }
 
   Future<void> updateTaskGroups(String taskId, List<Map<String, dynamic>> groups) async {

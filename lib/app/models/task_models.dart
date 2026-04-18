@@ -143,6 +143,8 @@ class TaskCompletionModel {
   final String messId;
   final String requestedBy;
   final List<String> acceptedBy;
+  final List<String> rejectedBy;
+  final int totalVoters;        // total mess members at time of submission
   final int requiredAcceptances;
   final CompletionStatus status;
   final DateTime requestedAt;
@@ -155,6 +157,8 @@ class TaskCompletionModel {
     required this.messId,
     required this.requestedBy,
     required this.acceptedBy,
+    this.rejectedBy = const [],
+    this.totalVoters = 0,
     this.requiredAcceptances = 2,
     required this.status,
     required this.requestedAt,
@@ -170,6 +174,8 @@ class TaskCompletionModel {
       messId: data['messId'] ?? '',
       requestedBy: data['requestedBy'] ?? '',
       acceptedBy: List<String>.from(data['acceptedBy'] ?? []),
+      rejectedBy: List<String>.from(data['rejectedBy'] ?? []),
+      totalVoters: data['totalVoters'] ?? 0,
       requiredAcceptances: data['requiredAcceptances'] ?? 2,
       status: completionStatusFromString(data['status'] ?? ''),
       requestedAt: (data['requestedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -185,6 +191,8 @@ class TaskCompletionModel {
         'messId': messId,
         'requestedBy': requestedBy,
         'acceptedBy': acceptedBy,
+        'rejectedBy': rejectedBy,
+        'totalVoters': totalVoters,
         'requiredAcceptances': requiredAcceptances,
         'status': status.value,
         'requestedAt': Timestamp.fromDate(requestedAt),
