@@ -71,11 +71,12 @@ class _TimelineTab extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(f['label']!),
+                    label: Text(f['label']!,style: TextStyle(color: AppColors.primary),),
                     selected: histCtrl.filter.value == f['value'],
                     onSelected: (_) => histCtrl.filter.value = f['value']!,
-                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.28),
                     checkmarkColor: AppColors.primary,
+                    selectedShadowColor: Colors.black,
                   ),
                 ),
             ],
@@ -146,18 +147,22 @@ class _HistoryTile extends StatelessWidget {
           children: [
             AppAvatar(photoUrl: member?.photoUrl, name: member?.name ?? '?', radius: 10),
             const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                member?.name ?? 'Unknown',
-                style: const TextStyle(fontSize: 12),
-                overflow: TextOverflow.ellipsis,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member?.name ?? 'Unknown',
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    AppHelpers.formatDateTime(rotation.scheduledDate),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '• ${AppHelpers.formatShortDate(rotation.scheduledDate)}',
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
