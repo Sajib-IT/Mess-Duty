@@ -22,6 +22,7 @@ class AuthController extends GetxController {
         if (user != null) {
           final userModel = await _authService.getUserModel(user.uid);
           currentUser.value = userModel;
+          if (Get.currentRoute == Routes.SPLASH) return; // splash handles first nav
           if (userModel != null) {
             final target = userModel.messId != null ? Routes.DASHBOARD : Routes.LANDING;
             if (Get.currentRoute != target) {
@@ -30,6 +31,7 @@ class AuthController extends GetxController {
           }
         } else {
           currentUser.value = null;
+          if (Get.currentRoute == Routes.SPLASH) return; // splash handles first nav
           if (Get.currentRoute != Routes.LOGIN) {
             Get.offAllNamed(Routes.LOGIN);
           }
@@ -80,3 +82,4 @@ class AuthController extends GetxController {
     await _authService.signOut();
   }
 }
+

@@ -6,6 +6,7 @@ import '../bindings/task_binding.dart';
 import '../bindings/history_binding.dart';
 import '../bindings/profile_binding.dart';
 import '../bindings/notification_binding.dart';
+import '../views/splash/splash_view.dart';
 import '../views/auth/login_view.dart';
 import '../views/auth/signup_view.dart';
 import '../views/landing/landing_view.dart';
@@ -23,6 +24,7 @@ import 'app_routes.dart';
 
 class AppPages {
   static final routes = [
+    GetPage(name: Routes.SPLASH, page: () => const SplashView()),
     GetPage(name: Routes.LOGIN, page: () => const LoginView()),
     GetPage(name: Routes.SIGNUP, page: () => const SignupView()),
     GetPage(name: Routes.LANDING, page: () => const LandingView(), binding: LandingBinding()),
