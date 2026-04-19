@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import '../models/user_model.dart';
@@ -10,7 +8,6 @@ import '../utils/app_constants.dart';
 class AuthService extends GetxService {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  final _storage = FirebaseStorage.instance;
   final _fcm = FirebaseMessaging.instance;
 
   User? get currentFirebaseUser => _auth.currentUser;
@@ -40,7 +37,6 @@ class AuthService extends GetxService {
     required String email,
     required String phone,
     required String password,
-    File? imageFile,
   }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -48,20 +44,12 @@ class AuthService extends GetxService {
     );
     final uid = credential.user!.uid;
 
-    String? photoUrl;
-    if (imageFile != null) {
-      final ref = _storage.ref().child('profile_photos/$uid.jpg');
-      await ref.putFile(imageFile);
-      photoUrl = await ref.getDownloadURL();
-    }
-
     final token = await _fcm.getToken();
     final user = UserModel(
       uid: uid,
       name: name,
       email: email,
       phone: phone,
-      photoUrl: photoUrl,
       fcmToken: token,
       createdAt: DateTime.now(),
     );
@@ -90,16 +78,10 @@ class AuthService extends GetxService {
     required String uid,
     String? name,
     String? phone,
-    File? imageFile,
   }) async {
     final updates = <String, dynamic>{};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
-    if (imageFile != null) {
-      final ref = _storage.ref().child('profile_photos/$uid.jpg');
-      await ref.putFile(imageFile);
-      updates['photoUrl'] = await ref.getDownloadURL();
-    }
     if (updates.isNotEmpty) {
       await _firestore.collection(Collections.users).doc(uid).update(updates);
     }

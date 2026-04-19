@@ -266,35 +266,6 @@ class ProfileView extends StatelessWidget {
             Text('Edit Profile',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            // Image picker
-            Obx(() => Center(
-                  child: GestureDetector(
-                    onTap: ctrl.pickImage,
-                    child: Stack(
-                      children: [
-                        ctrl.selectedImage.value != null
-                            ? CircleAvatar(
-                                radius: 40,
-                                backgroundImage: FileImage(ctrl.selectedImage.value!),
-                              )
-                            : AppAvatar(photoUrl: user.photoUrl, name: user.name, radius: 40),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
-            const SizedBox(height: 16),
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person)),

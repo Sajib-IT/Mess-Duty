@@ -63,42 +63,6 @@ class SignupView extends StatelessWidget {
                       key: formKey,
                       child: Column(
                         children: [
-                          const SizedBox(height: 16),
-                          // Profile photo picker
-                          Obx(() => GestureDetector(
-                                onTap: ctrl.pickImage,
-                                child: Stack(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 56,
-                                      backgroundColor: AppColors.primaryLight.withValues(alpha: 0.3),
-                                      backgroundImage: ctrl.selectedImage.value != null
-                                          ? FileImage(ctrl.selectedImage.value!)
-                                          : null,
-                                      child: ctrl.selectedImage.value == null
-                                          ? const Icon(Icons.person, size: 56, color: AppColors.primary)
-                                          : null,
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap to add profile photo',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                          ),
                           const SizedBox(height: 24),
                           TextFormField(
                             controller: nameCtrl,

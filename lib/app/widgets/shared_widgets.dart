@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -18,13 +17,6 @@ class AppAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (photoUrl != null && photoUrl!.isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: CachedNetworkImageProvider(photoUrl!),
-        backgroundColor: backgroundColor ?? AppColors.primaryLight,
-      );
-    }
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor ?? AppColors.primary,

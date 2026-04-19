@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../routes/app_routes.dart';
@@ -13,7 +11,6 @@ class AuthController extends GetxController {
   final currentUser = Rxn<UserModel>();
   final isLoading = false.obs;
   final errorMessage = ''.obs;
-  final selectedImage = Rxn<File>();
 
   @override
   void onInit() {
@@ -55,7 +52,6 @@ class AuthController extends GetxController {
         email: email,
         phone: phone,
         password: password,
-        imageFile: selectedImage.value,
       );
     } on FirebaseAuthException catch (e) {
       errorMessage.value = e.message ?? 'Sign up failed';
@@ -83,14 +79,4 @@ class AuthController extends GetxController {
   Future<void> signOut() async {
     await _authService.signOut();
   }
-
-  Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (picked != null) {
-      selectedImage.value = File(picked.path);
-    }
-  }
 }
-
-
