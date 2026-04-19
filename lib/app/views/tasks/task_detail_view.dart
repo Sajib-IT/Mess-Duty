@@ -14,9 +14,10 @@ class TaskDetailView extends StatefulWidget {
 }
 
 class _TaskDetailViewState extends State<TaskDetailView> {
-  TaskModel? task; // nullable — may be null when opened without arguments
+  TaskModel? task;
   late TaskController taskCtrl;
   List<Map<String, dynamic>> groups = <Map<String, dynamic>>[];
+  bool _saving = false;
 
   @override
   void initState() {
@@ -77,8 +78,37 @@ class _TaskDetailViewState extends State<TaskDetailView> {
 
   Future<void> _save() async {
     if (task == null) return;
-    await taskCtrl.updateTaskGroups(task!.taskId, groups);
-    Get.back();
+    setState(() => _saving = true);
+    try {
+      await taskCtrl.updateTaskGroups(task!.taskId, groups);
+      Get.snackbar(
+        '✅ Saved',
+        'Task configuration updated successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
+        icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+      );
+      await Future.delayed(const Duration(milliseconds: 1800));
+      Get.back();
+    } catch (e) {
+      Get.snackbar(
+        '❌ Failed',
+        'Could not save configuration. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -193,7 +223,13 @@ class _TaskDetailViewState extends State<TaskDetailView> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _save, tooltip: 'Save'),
+          if (_saving)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
+            )
+          else
+            IconButton(icon: const Icon(Icons.save), onPressed: _save, tooltip: 'Save'),
         ],
       ),
       body: Column(
@@ -249,9 +285,15 @@ class _TaskDetailViewState extends State<TaskDetailView> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: ElevatedButton(
-            onPressed: _save,
+            onPressed: _saving ? null : _save,
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-            child: const Text('Save Configuration'),
+            child: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Save Configuration'),
           ),
         ),
       ),
