@@ -9,6 +9,7 @@ class AuthController extends GetxController {
   final _authService = Get.find<AuthService>();
 
   final currentUser = Rxn<UserModel>();
+  final isAuthReady = false.obs; // true after first Firebase auth event is processed
   final isLoading = false.obs;
   final errorMessage = ''.obs;
 
@@ -22,6 +23,7 @@ class AuthController extends GetxController {
         if (user != null) {
           final userModel = await _authService.getUserModel(user.uid);
           currentUser.value = userModel;
+          isAuthReady.value = true; // auth resolved
           if (Get.currentRoute == Routes.SPLASH) return; // splash handles first nav
           if (userModel != null) {
             final target = userModel.messId != null ? Routes.DASHBOARD : Routes.LANDING;
@@ -31,6 +33,7 @@ class AuthController extends GetxController {
           }
         } else {
           currentUser.value = null;
+          isAuthReady.value = true; // auth resolved (not signed in)
           if (Get.currentRoute == Routes.SPLASH) return; // splash handles first nav
           if (Get.currentRoute != Routes.LOGIN) {
             Get.offAllNamed(Routes.LOGIN);

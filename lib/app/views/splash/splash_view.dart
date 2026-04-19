@@ -29,7 +29,22 @@ class _SplashViewState extends State<SplashView>
     );
     _animController.forward();
 
-    Future.delayed(const Duration(seconds: 2), _navigate);
+    _waitAndNavigate();
+  }
+
+  Future<void> _waitAndNavigate() async {
+    final auth = Get.find<AuthController>();
+
+    // Run minimum splash display & auth resolution in parallel, then navigate
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1500)),
+      auth.isAuthReady.stream.firstWhere((ready) => ready),
+    ]);
+
+    // Extra small delay so dashboard feels intentional, not a flash
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    _navigate();
   }
 
   void _navigate() {
@@ -116,5 +131,6 @@ class _SplashViewState extends State<SplashView>
     );
   }
 }
+
 
 
