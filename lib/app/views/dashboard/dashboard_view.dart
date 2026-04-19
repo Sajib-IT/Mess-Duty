@@ -64,41 +64,43 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: Obx(() {
-        final notifCtrl = Get.find<NotificationController>();
-        return BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
-          items: [
-            const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-            const BottomNavigationBarItem(icon: Icon(Icons.task_alt), label: 'Tasks'),
-            const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-            BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.person),
-                  if (notifCtrl.unreadCount.value > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
+    return ExitConfirmWrapper(
+      child: Scaffold(
+        body: _pages[_currentIndex],
+        bottomNavigationBar: Obx(() {
+          final notifCtrl = Get.find<NotificationController>();
+          return BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) => setState(() => _currentIndex = i),
+            items: [
+              const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+              const BottomNavigationBarItem(icon: Icon(Icons.task_alt), label: 'Tasks'),
+              const BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
+              BottomNavigationBarItem(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.person),
+                    if (notifCtrl.unreadCount.value > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
+                label: 'Profile',
               ),
-              label: 'Profile',
-            ),
-          ],
-        );
-      }),
+            ],
+          );
+        }),
+      ),
     );
   }
 }

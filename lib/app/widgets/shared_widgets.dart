@@ -1,5 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+
+/// Wraps a root-level page so that pressing back once shows a "Press back again
+/// to exit" snackbar, and pressing back a second time within 2 seconds exits.
+class ExitConfirmWrapper extends StatefulWidget {
+  final Widget child;
+  const ExitConfirmWrapper({super.key, required this.child});
+
+  @override
+  State<ExitConfirmWrapper> createState() => _ExitConfirmWrapperState();
+}
+
+class _ExitConfirmWrapperState extends State<ExitConfirmWrapper> {
+  DateTime? _lastBackPressed;
+
+  Future<bool> _onWillPop() async {
+    final now = DateTime.now();
+    if (_lastBackPressed == null ||
+        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+      _lastBackPressed = now;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.exit_to_app, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Text('Press back again to exit'),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: Colors.black87,
+        ),
+      );
+      return false;
+    }
+    await SystemNavigator.pop();
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (!didPop) await _onWillPop();
+      },
+      child: widget.child,
+    );
+  }
+}
 
 class AppAvatar extends StatelessWidget {
   final String? photoUrl;

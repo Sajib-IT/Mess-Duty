@@ -4,6 +4,7 @@ import '../../controllers/mess_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/shared_widgets.dart';
 
 class LandingView extends StatelessWidget {
   const LandingView({super.key});
@@ -46,7 +47,8 @@ class LandingView extends StatelessWidget {
       },
     ];
 
-    return Scaffold(
+    return ExitConfirmWrapper(
+      child: Scaffold(
       body: Column(
         children: [
           // Header
@@ -254,6 +256,7 @@ class LandingView extends StatelessWidget {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
     );
   }
 }
