@@ -63,7 +63,12 @@ class _CreateMessViewState extends State<CreateMessView> {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                          icon: Icon(
+                            Theme.of(context).platform == TargetPlatform.iOS
+                                ? Icons.arrow_back_ios_new
+                                : Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                           onPressed: () => _step == 1 ? setState(() => _step = 0) : Get.back(),
                         ),
                         Text(

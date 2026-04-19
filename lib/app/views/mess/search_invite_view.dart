@@ -13,7 +13,10 @@ class SearchInviteView extends StatelessWidget {
     final searchCtrl = TextEditingController();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Invite Members')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Invite Members'),
+      ),
       body: Column(
         children: [
           Padding(

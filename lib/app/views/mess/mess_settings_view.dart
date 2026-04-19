@@ -15,6 +15,7 @@ class MessSettingsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Mess Settings'),
         actions: [
           IconButton(

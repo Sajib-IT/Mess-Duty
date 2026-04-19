@@ -16,6 +16,7 @@ class NotificationsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Notifications'),
         actions: [
           TextButton(

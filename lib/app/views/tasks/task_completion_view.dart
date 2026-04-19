@@ -14,7 +14,10 @@ class TaskCompletionView extends StatelessWidget {
     final taskCtrl = Get.find<TaskController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Completion Requests')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Completion Requests'),
+      ),
       body: Obx(() {
         final requests = taskCtrl.completionRequests;
         if (requests.isEmpty) {

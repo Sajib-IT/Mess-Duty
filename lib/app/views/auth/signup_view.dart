@@ -38,7 +38,12 @@ class SignupView extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      icon: Icon(
+                        Theme.of(context).platform == TargetPlatform.iOS
+                            ? Icons.arrow_back_ios_new
+                            : Icons.arrow_back,
+                        color: Colors.white,
+                      ),
                       onPressed: () => Get.back(),
                     ),
                     Text(

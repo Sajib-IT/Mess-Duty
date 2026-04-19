@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
+
+/// Platform-adaptive back button: arrow_back_ios_new on iOS, arrow_back on Android.
+class AppBackButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  const AppBackButton({super.key, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    return IconButton(
+      icon: Icon(isIOS ? Icons.arrow_back_ios_new : Icons.arrow_back),
+      onPressed: onPressed ?? () => Get.back(),
+    );
+  }
+}
 
 /// Wraps a root-level page so that pressing back once shows a "Press back again
 /// to exit" snackbar, and pressing back a second time within 2 seconds exits.

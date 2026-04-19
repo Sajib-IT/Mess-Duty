@@ -86,7 +86,10 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     // ── No task selected yet: show task picker ─────────────────────────────
     if (task == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Configure Task')),
+        appBar: AppBar(
+          leading: const AppBackButton(),
+          title: const Text('Configure Task'),
+        ),
         body: Obx(() {
           final tasks = taskCtrl.tasks;
           if (tasks.isEmpty) {
@@ -181,6 +184,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: Row(
           children: [
             Text(task!.taskType.icon, style: const TextStyle(fontSize: 20)),
