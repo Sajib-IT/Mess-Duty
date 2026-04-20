@@ -71,10 +71,19 @@ class TaskService extends GetxService {
   }
 
   Future<void> deleteTask(String taskId) async {
-    await _firestore
-        .collection(Collections.tasks)
-        .doc(taskId)
-        .update({'isActive': false});
+    // Delete all groups belonging to this task
+    final groupSnap = await _firestore
+        .collection(Collections.taskGroups)
+        .where('taskId', isEqualTo: taskId)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in groupSnap.docs) {
+      batch.delete(doc.reference);
+    }
+    // Hard-delete the task document itself
+    batch.delete(_firestore.collection(Collections.tasks).doc(taskId));
+    await batch.commit();
   }
 
   Stream<List<TaskGroupModel>> getTaskGroupsStream(String messId) {
