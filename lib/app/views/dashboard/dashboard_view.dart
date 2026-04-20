@@ -439,10 +439,36 @@ class _DutyCard extends StatelessWidget {
     final taskType = task?.taskType;
     final color = _taskColor(taskType);
 
+    // Look up the group name from taskCtrl
+    final groups = task != null ? taskCtrl.getGroupsForTask(task!.taskId) : <dynamic>[];
+    final group = groups.firstWhereOrNull((g) => g.groupId == rotation.groupId);
+    final groupName = group?.label as String?;
+
+    // Status label & colour
+    final String statusLabel;
+    final Color statusColor;
+    switch (rotation.status) {
+      case RotationStatus.pending:
+        statusLabel = 'Pending';
+        statusColor = AppColors.warning;
+        break;
+      case RotationStatus.inProgress:
+        statusLabel = 'Verifying';
+        statusColor = AppColors.info;
+        break;
+      case RotationStatus.completed:
+        statusLabel = 'Done';
+        statusColor = AppColors.success;
+        break;
+      default:
+        statusLabel = rotation.status.value;
+        statusColor = Colors.grey;
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: isMe ? color.withValues(alpha: 0.08) : Colors.white,
+        color: isMe ? color.withValues(alpha: 0.06) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isMe ? color.withValues(alpha: 0.4) : Colors.grey.shade200,
@@ -459,10 +485,12 @@ class _DutyCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Task icon
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
@@ -470,30 +498,72 @@ class _DutyCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   taskType?.icon ?? '📋',
-                  style: const TextStyle(fontSize: 22),
+                  style: const TextStyle(fontSize: 24),
                 ),
               ),
             ),
             const SizedBox(width: 12),
+
+            // Details column
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    taskType?.label ?? 'Task',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  // Task name + status badge
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          taskType?.label ?? 'Task',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 5),
+
+                  // Group name (if available)
+                  if (groupName != null && groupName.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.group_outlined, size: 13, color: Colors.grey.shade500),
+                        const SizedBox(width: 4),
+                        Text(
+                          groupName,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 4),
+
+                  // Assigned member
                   Row(
                     children: [
                       AppAvatar(
                         photoUrl: member?.photoUrl,
                         name: member?.name ?? '?',
                         radius: 10,
+                        backgroundColor: isMe ? color : null,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isMe ? 'You' : (member?.name ?? 'Unknown'),
+                        isMe ? '👤 You are assigned' : (member?.name ?? 'Unknown'),
                         style: TextStyle(
                           color: isMe ? color : Colors.grey.shade600,
                           fontSize: 12,
@@ -505,27 +575,22 @@ class _DutyCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            const SizedBox(width: 8),
+
+            // Action button
             if (isMe && rotation.status == RotationStatus.pending)
               ElevatedButton(
                 onPressed: () => taskCtrl.submitCompletion(rotation),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   backgroundColor: color,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Done', style: TextStyle(fontSize: 12)),
-              )
-            else if (rotation.status == RotationStatus.inProgress)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Verifying',
-                  style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
+                child: const Text('Mark\nDone',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, height: 1.3)),
               ),
           ],
         ),
