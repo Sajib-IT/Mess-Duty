@@ -5,7 +5,6 @@ import '../../controllers/task_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../models/task_models.dart';
 import '../../models/user_model.dart';
-import '../../services/notification_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/app_constants.dart';
@@ -224,7 +223,7 @@ class _TaskCard extends StatelessWidget {
                                 child: const Text('Mark Done', style: TextStyle(fontSize: 12)),
                               )
                             else if (!isMe && rotation.status == RotationStatus.pending)
-                              _ContactButtons(member: assignedMember, rotation: rotation),
+                              _ContactButtons(member: assignedMember, rotation: rotation, task: task),
                           ],
                         ),
                       ),
@@ -299,114 +298,92 @@ class _TaskCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 class _ContactButtons extends StatelessWidget {
   final UserModel? member;
   final DutyRotationModel? rotation;
-  const _ContactButtons({this.member, this.rotation});
+  final TaskModel task;
+
+  const _ContactButtons({this.member, this.rotation, required this.task});
 
   Future<void> _launch(Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('Error', 'Could not open app', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Error', 'Could not open app',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
   void _showReminderDialog(BuildContext context) {
-    DateTime selectedDate = DateTime.now().add(const Duration(hours: 1));
-    TimeOfDay selectedTime = TimeOfDay.fromDateTime(selectedDate);
+    final taskLabel  = task.taskType.label;
+    final taskIcon   = task.taskType.icon;
+    final memberName = member?.name ?? 'the member';
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Set Reminder'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Send a scheduled notification to ${member?.name ?? 'this member'} reminding them of their duty.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+      builder: (ctx) => AlertDialog(
+        title: Text('$taskIcon Send Reminder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today, color: AppColors.primary),
-                title: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: ctx,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 30)),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      selectedDate = DateTime(
-                        picked.year, picked.month, picked.day,
-                        selectedTime.hour, selectedTime.minute,
-                      );
-                    });
-                  }
-                },
+              child: Row(
+                children: [
+                  const Icon(Icons.send, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'A push notification will be sent to $memberName reminding them to complete "$taskLabel".',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.access_time, color: AppColors.primary),
-                title: Text(selectedTime.format(ctx)),
-                onTap: () async {
-                  final picked = await showTimePicker(context: ctx, initialTime: selectedTime);
-                  if (picked != null) {
-                    setState(() {
-                      selectedTime = picked;
-                      selectedDate = DateTime(
-                        selectedDate.year, selectedDate.month, selectedDate.day,
-                        picked.hour, picked.minute,
-                      );
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final notifService = Get.find<NotificationService>();
-                final pushService = Get.find<PushNotificationService>();
-
-                final title = '⏰ Duty Reminder';
-                final body = '${member?.name ?? 'Hey'} — it\'s your turn! Please complete your assigned mess task.';
-
-                // 1. Schedule local notification on this device
-                await notifService.scheduleReminder(
-                  id: (rotation.hashCode ^ DateTime.now().millisecondsSinceEpoch) & 0x7FFFFFFF,
-                  title: title,
-                  body: body,
-                  scheduledDate: selectedDate,
-                );
-
-                // 2. Send push to the assigned member via FCM relay API
-                if (member != null) {
-                  await pushService.sendToUser(
-                    userId: member!.uid,
-                    title: title,
-                    body: body,
-                  );
-                }
-
-                Get.snackbar(
-                  'Reminder Set',
-                  'Notification scheduled for ${selectedTime.format(context)} & push sent to ${member?.name ?? 'member'}',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: AppColors.success,
-                  colorText: Colors.white,
-                );
-              },
-              child: const Text('Set Reminder'),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'The notification will be delivered immediately to $memberName\'s device.',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final pushService = Get.find<PushNotificationService>();
+
+              if (member != null) {
+                await pushService.sendToUser(
+                  userId: member!.uid,
+                  title: '$taskIcon Duty Reminder',
+                  body:
+                      'Hey $memberName! It\'s your turn for "$taskLabel". Please complete your mess duty.',
+                );
+              }
+
+              Get.snackbar(
+                '✅ Reminder Sent',
+                'Push notification sent to $memberName',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: AppColors.success,
+                colorText: Colors.white,
+                margin: const EdgeInsets.all(16),
+                borderRadius: 12,
+                icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+              );
+            },
+            child: const Text('Send Reminder'),
+          ),
+        ],
       ),
     );
   }
@@ -414,32 +391,37 @@ class _ContactButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (member == null) return const SizedBox();
-    final phone = (member!.phone ?? '').replaceAll(RegExp(r'[^0-9+]'), '');
+    final phone = member!.phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final email = member!.email;
 
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.notifications_active_outlined, size: 22, color: AppColors.primary),
+      icon: const Icon(Icons.notifications_active_outlined,
+          size: 22, color: AppColors.primary),
       tooltip: 'Remind / Contact',
       onSelected: (v) async {
         switch (v) {
+          case 'reminder':
+            _showReminderDialog(context);
+            break;
           case 'call':
             if (phone.isNotEmpty) await _launch(Uri(scheme: 'tel', path: phone));
+            break;
+          case 'whatsapp':
+            if (phone.isNotEmpty) {
+              final cleaned = phone.startsWith('+') ? phone.substring(1) : phone;
+              await _launch(Uri.parse(
+                  'https://wa.me/$cleaned?text=Hey+it\'s+your+turn+for+a+mess+duty!'));
+            }
             break;
           case 'email':
             await _launch(Uri(
               scheme: 'mailto',
               path: email,
-              queryParameters: {'subject': 'MessDuty Reminder', 'body': 'Hey, it\'s your turn for a mess duty!'},
+              queryParameters: {
+                'subject': 'MessDuty Reminder',
+                'body': 'Hey, it\'s your turn for a mess duty!',
+              },
             ));
-            break;
-          case 'whatsapp':
-            if (phone.isNotEmpty) {
-              final cleaned = phone.startsWith('+') ? phone.substring(1) : phone;
-              await _launch(Uri.parse('https://wa.me/$cleaned?text=Hey+it\'s+your+turn+for+a+mess+duty!'));
-            }
-            break;
-          case 'reminder':
-            _showReminderDialog(context);
             break;
         }
       },
@@ -448,9 +430,10 @@ class _ContactButtons extends StatelessWidget {
           value: 'reminder',
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.alarm, color: AppColors.primary),
-            title: const Text('Set Reminder'),
-            subtitle: const Text('Schedule a notification', style: TextStyle(fontSize: 11)),
+            leading: const Icon(Icons.send, color: AppColors.primary),
+            title: const Text('Send Reminder'),
+            subtitle: const Text('Push notification to duty member',
+                style: TextStyle(fontSize: 11)),
           ),
         ),
         if (phone.isNotEmpty) ...[
@@ -486,5 +469,4 @@ class _ContactButtons extends StatelessWidget {
     );
   }
 }
-
 

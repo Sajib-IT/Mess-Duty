@@ -1,9 +1,15 @@
+import 'dart:developer' as dev;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import '../models/user_model.dart';
 import '../utils/app_constants.dart';
+
+void _logFcm(String msg) {
+  if (kDebugMode) dev.log('[FCMToken] $msg', name: 'MessDuty');
+}
 
 class AuthService extends GetxService {
   final _auth = FirebaseAuth.instance;
@@ -45,6 +51,7 @@ class AuthService extends GetxService {
     final uid = credential.user!.uid;
 
     final token = await _fcm.getToken();
+    _logFcm('📱 Device FCM token (signUp): $token');
     final user = UserModel(
       uid: uid,
       name: name,
@@ -62,6 +69,7 @@ class AuthService extends GetxService {
     final credential = await _auth.signInWithEmailAndPassword(email: email, password: password);
     final uid = credential.user!.uid;
     final token = await _fcm.getToken();
+    _logFcm('📱 Device FCM token (signIn): $token');
     await _firestore.collection(Collections.users).doc(uid).update({'fcmToken': token});
     return getUserModel(uid);
   }
