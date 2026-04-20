@@ -8,6 +8,8 @@ class TaskModel {
   final List<String> groupIds;
   final bool isActive;
   final DateTime? reminderTime;
+  final String? customLabel;
+  final String? customIcon;
 
   TaskModel({
     required this.taskId,
@@ -16,7 +18,17 @@ class TaskModel {
     required this.groupIds,
     this.isActive = true,
     this.reminderTime,
+    this.customLabel,
+    this.customIcon,
   });
+
+  String get displayLabel => taskType == TaskType.custom
+      ? (customLabel?.isNotEmpty == true ? customLabel! : 'Custom Task')
+      : taskType.label;
+
+  String get displayIcon => taskType == TaskType.custom
+      ? (customIcon?.isNotEmpty == true ? customIcon! : '📌')
+      : taskType.icon;
 
   factory TaskModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -29,6 +41,8 @@ class TaskModel {
       reminderTime: data['reminderTime'] != null
           ? (data['reminderTime'] as Timestamp).toDate()
           : null,
+      customLabel: data['customLabel'],
+      customIcon: data['customIcon'],
     );
   }
 
@@ -38,6 +52,8 @@ class TaskModel {
         'groupIds': groupIds,
         'isActive': isActive,
         'reminderTime': reminderTime != null ? Timestamp.fromDate(reminderTime!) : null,
+        'customLabel': customLabel,
+        'customIcon': customIcon,
       };
 }
 

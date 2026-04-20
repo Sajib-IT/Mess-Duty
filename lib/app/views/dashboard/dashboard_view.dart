@@ -497,7 +497,7 @@ class _DutyCard extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  taskType?.icon ?? '📋',
+                  task?.displayIcon ?? '📋',
                   style: const TextStyle(fontSize: 24),
                 ),
               ),
@@ -514,7 +514,7 @@ class _DutyCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          taskType?.label ?? 'Task',
+                          task?.displayLabel ?? 'Task',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ),
@@ -605,6 +605,7 @@ class _DutyCard extends StatelessWidget {
       case TaskType.basinCleaning: return AppColors.basinCleaning;
       case TaskType.waterFilterRefill: return AppColors.waterFilter;
       case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      case TaskType.custom: return AppColors.customTask;
       default: return AppColors.primary;
     }
   }
@@ -628,6 +629,7 @@ class _CompletionRequestCard extends StatelessWidget {
       case TaskType.basinCleaning: return AppColors.basinCleaning;
       case TaskType.waterFilterRefill: return AppColors.waterFilter;
       case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      case TaskType.custom: return AppColors.customTask;
       default: return AppColors.warning;
     }
   }
@@ -671,7 +673,7 @@ class _CompletionRequestCard extends StatelessWidget {
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(child: Text(taskType?.icon ?? '📋', style: const TextStyle(fontSize: 22))),
+                  child: Center(child: Text(task?.displayIcon ?? '📋', style: const TextStyle(fontSize: 22))),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -679,7 +681,7 @@ class _CompletionRequestCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        taskType?.label ?? 'Unknown Task',
+                        task?.displayLabel ?? 'Unknown Task',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       const SizedBox(height: 2),

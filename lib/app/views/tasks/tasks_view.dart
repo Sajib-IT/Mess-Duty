@@ -31,6 +31,12 @@ class TasksView extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreateTaskDialog(context, taskCtrl),
+        icon: const Icon(Icons.add),
+        label: const Text('New Task'),
+        backgroundColor: const Color(0xFF7B1FA2),
+      ),
       body: Obx(() {
         final tasks = taskCtrl.tasks;
         if (tasks.isEmpty) {
@@ -50,6 +56,91 @@ class TasksView extends StatelessWidget {
   }
 }
 
+void _showCreateTaskDialog(BuildContext context, TaskController taskCtrl) {
+  final labelCtrl = TextEditingController();
+  final selectedIcon = '📌'.obs;
+
+  const emojis = [
+    '📌','🧹','🛁','🍳','🧺','🪣','💡','🔧','🪴','🧴',
+    '🚗','📦','🛒','🍽️','🧊','🪟','🚪','🛏️','🪑','🧯',
+  ];
+
+  Get.dialog(
+    AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.add_task, color: Color(0xFF7B1FA2)),
+          SizedBox(width: 8),
+          Text('Create New Task'),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: labelCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Task Name *',
+                hintText: 'e.g. Room Cleaning',
+                prefixIcon: Icon(Icons.edit_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Choose Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            Obx(() => Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: emojis.map((e) => GestureDetector(
+                onTap: () => selectedIcon.value = e,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: selectedIcon.value == e
+                        ? const Color(0xFF7B1FA2).withValues(alpha: 0.15)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selectedIcon.value == e
+                          ? const Color(0xFF7B1FA2)
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(child: Text(e, style: const TextStyle(fontSize: 20))),
+                ),
+              )).toList(),
+            )),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+        Obx(() => ElevatedButton.icon(
+          onPressed: () async {
+            final label = labelCtrl.text.trim();
+            if (label.isEmpty) {
+              Get.snackbar('Required', 'Please enter a task name.',
+                  snackPosition: SnackPosition.BOTTOM);
+              return;
+            }
+            Get.back();
+            await taskCtrl.createTask(label: label, icon: selectedIcon.value);
+          },
+          icon: Text(selectedIcon.value, style: const TextStyle(fontSize: 16)),
+          label: const Text('Create'),
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
+        )),
+      ],
+    ),
+  );
+}
+
 class _TaskCard extends StatelessWidget {
   final TaskModel task;
   final TaskController taskCtrl;
@@ -64,7 +155,23 @@ class _TaskCard extends StatelessWidget {
       case TaskType.basinCleaning: return AppColors.basinCleaning;
       case TaskType.waterFilterRefill: return AppColors.waterFilter;
       case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      case TaskType.custom: return AppColors.customTask;
     }
+  }
+
+  void _confirmDelete(TaskModel t) {
+    Get.dialog(AlertDialog(
+      title: const Text('Delete Task'),
+      content: Text('Delete "${t.displayLabel}"? This cannot be undone.'),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+        ElevatedButton(
+          onPressed: () { Get.back(); taskCtrl.deleteTask(t.taskId, t.displayLabel); },
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+          child: const Text('Delete'),
+        ),
+      ],
+    ));
   }
 
   @override
@@ -84,10 +191,10 @@ class _TaskCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
-              child: Text(task.taskType.icon, style: const TextStyle(fontSize: 22)),
+              child: Text(task.displayIcon, style: const TextStyle(fontSize: 22)),
             ),
           ),
-          title: Text(task.taskType.label,
+          title: Text(task.displayLabel,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           subtitle: Text('${groups.length} group${groups.length != 1 ? 's' : ''}',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
@@ -99,6 +206,12 @@ class _TaskCard extends StatelessWidget {
                 onPressed: () => Get.toNamed(Routes.TASK_DETAIL, arguments: task),
                 tooltip: 'Configure Groups',
               ),
+              if (task.taskType == TaskType.custom)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                  onPressed: () => _confirmDelete(task),
+                  tooltip: 'Delete Task',
+                ),
               const Icon(Icons.expand_more),
             ],
           ),

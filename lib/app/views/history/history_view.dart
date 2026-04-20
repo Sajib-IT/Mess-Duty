@@ -138,10 +138,10 @@ class _HistoryTile extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: Text(task?.taskType.icon ?? '📋', style: const TextStyle(fontSize: 18)),
+            child: Text(task?.displayIcon ?? '📋', style: const TextStyle(fontSize: 18)),
           ),
         ),
-        title: Text(task?.taskType.label ?? 'Task',
+        title: Text(task?.displayLabel ?? 'Task',
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Row(
           children: [
@@ -461,6 +461,7 @@ class _StatsTab extends StatelessWidget {
       case TaskType.basinCleaning: return AppColors.basinCleaning;
       case TaskType.waterFilterRefill: return AppColors.waterFilter;
       case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      case TaskType.custom: return AppColors.customTask;
     }
   }
 
@@ -552,14 +553,14 @@ class _StatsTab extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Center(
-                                  child: Text(t.taskType.icon, style: const TextStyle(fontSize: 16)),
+                                  child: Text(t.displayIcon, style: const TextStyle(fontSize: 16)),
                                 ),
                               ),
                               const SizedBox(width: 10),
                               // Task label
                               Expanded(
                                 child: Text(
-                                  t.taskType.label,
+                                  t.displayLabel,
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                                 ),
                               ),

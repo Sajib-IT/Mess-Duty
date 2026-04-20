@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/task_models.dart';
 import '../models/user_model.dart';
@@ -75,7 +76,7 @@ class TaskController extends GetxController {
       final otherUids = members.where((m) => m.uid != currentUid).map((m) => m.uid).toList();
       final myName = members.firstWhereOrNull((m) => m.uid == currentUid)?.name ?? 'A member';
       final task = tasks.firstWhereOrNull((t) => t.taskId == rotation.taskId);
-      final taskLabel = task?.taskType.label ?? 'a task';
+      final taskLabel = task?.displayLabel ?? 'a task';
       await _push?.sendToUsers(
         userIds: otherUids,
         title: '✅ Verify Task Completion',
@@ -130,7 +131,7 @@ class TaskController extends GetxController {
       if (isApproved) {
         final myName = members.firstWhereOrNull((m) => m.uid == currentUid)?.name ?? 'A member';
         final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
-        final taskLabel = task?.taskType.label ?? 'your task';
+        final taskLabel = task?.displayLabel ?? 'your task';
         await _notif?.createInAppNotification(
           userId: completion.requestedBy,
           messId: completion.messId,
@@ -181,7 +182,7 @@ class TaskController extends GetxController {
       // In-app notification to requester when rejected
       if (isRejected) {
         final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
-        final taskLabel = task?.taskType.label ?? 'your task';
+        final taskLabel = task?.displayLabel ?? 'your task';
         await _notif?.createInAppNotification(
           userId: completion.requestedBy,
           messId: completion.messId,
@@ -204,6 +205,40 @@ class TaskController extends GetxController {
             : 'Your rejection recorded. ($pct% rejected so far)',
         snackPosition: SnackPosition.BOTTOM,
       );
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    }
+  }
+
+  Future<void> createTask({
+    required String label,
+    required String icon,
+  }) async {
+    if (_messId == null) return;
+    try {
+      final allMemberIds = members.map((m) => m.uid).toList();
+      await _taskService.createCustomTask(
+        messId: _messId!,
+        label: label,
+        icon: icon,
+        memberIds: allMemberIds,
+      );
+      Get.snackbar('✅ Task Created', '"$icon $label" has been added.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF7B1FA2),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12);
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    }
+  }
+
+  Future<void> deleteTask(String taskId, String label) async {
+    try {
+      await _taskService.deleteTask(taskId);
+      Get.snackbar('Deleted', '"$label" task removed.',
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       Get.snackbar('Error', e.toString());
     }

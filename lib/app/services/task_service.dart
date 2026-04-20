@@ -41,6 +41,42 @@ class TaskService extends GetxService {
         .map((snap) => snap.docs.map((d) => TaskModel.fromFirestore(d)).toList());
   }
 
+  Future<String> createCustomTask({
+    required String messId,
+    required String label,
+    required String icon,
+    required List<String> memberIds,
+  }) async {
+    final taskRef  = _firestore.collection(Collections.tasks).doc();
+    final groupRef = _firestore.collection(Collections.taskGroups).doc();
+    final batch    = _firestore.batch();
+    batch.set(groupRef, {
+      'taskId': taskRef.id,
+      'messId': messId,
+      'memberIds': memberIds,
+      'currentRotationIndex': 0,
+      'label': label,
+    });
+    batch.set(taskRef, {
+      'messId': messId,
+      'taskType': 'custom',
+      'customLabel': label,
+      'customIcon': icon,
+      'groupIds': [groupRef.id],
+      'isActive': true,
+      'reminderTime': null,
+    });
+    await batch.commit();
+    return taskRef.id;
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _firestore
+        .collection(Collections.tasks)
+        .doc(taskId)
+        .update({'isActive': false});
+  }
+
   Stream<List<TaskGroupModel>> getTaskGroupsStream(String messId) {
     return _firestore
         .collection(Collections.taskGroups)

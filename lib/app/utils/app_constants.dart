@@ -16,6 +16,7 @@ enum TaskType {
   basinCleaning,
   waterFilterRefill,
   garbageDisposal,
+  custom,
 }
 
 extension TaskTypeExtension on TaskType {
@@ -26,6 +27,7 @@ extension TaskTypeExtension on TaskType {
       case TaskType.basinCleaning: return 'Basin Cleaning';
       case TaskType.waterFilterRefill: return 'Water Filter Refill';
       case TaskType.garbageDisposal: return 'Garbage Disposal';
+      case TaskType.custom: return 'Custom Task';
     }
   }
 
@@ -36,6 +38,7 @@ extension TaskTypeExtension on TaskType {
       case TaskType.basinCleaning: return '🚰';
       case TaskType.waterFilterRefill: return '💧';
       case TaskType.garbageDisposal: return '🗑️';
+      case TaskType.custom: return '📌';
     }
   }
 

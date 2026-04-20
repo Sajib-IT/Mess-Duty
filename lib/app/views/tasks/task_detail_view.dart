@@ -45,7 +45,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     } else {
       groups = <Map<String, dynamic>>[
         <String, dynamic>{
-          'label': task!.taskType.label,
+          'label': task!.displayLabel,
           'memberIds': List<String>.from(taskCtrl.members.map((m) => m.uid)),
         },
       ];
@@ -175,7 +175,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Center(
-                                child: Text(t.taskType.icon, style: const TextStyle(fontSize: 26)),
+                                child: Text(t.displayIcon, style: const TextStyle(fontSize: 26)),
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -184,7 +184,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    t.taskType.label,
+                                    t.displayLabel,
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                   ),
                                   const SizedBox(height: 2),
@@ -217,9 +217,9 @@ class _TaskDetailViewState extends State<TaskDetailView> {
         leading: const AppBackButton(),
         title: Row(
           children: [
-            Text(task!.taskType.icon, style: const TextStyle(fontSize: 20)),
+            Text(task!.displayIcon, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
-            Text(task!.taskType.label),
+            Text(task!.displayLabel),
           ],
         ),
         actions: [
@@ -307,6 +307,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
       case TaskType.basinCleaning: return AppColors.basinCleaning;
       case TaskType.waterFilterRefill: return AppColors.waterFilter;
       case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+      case TaskType.custom: return AppColors.customTask;
     }
   }
 }

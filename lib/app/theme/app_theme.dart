@@ -23,6 +23,7 @@ class AppColors {
   static const basinCleaning = Color(0xFF00838F);
   static const waterFilter = Color(0xFF0288D1);
   static const garbageDisposal = Color(0xFF558B2F);
+  static const customTask      = Color(0xFF7B1FA2); // purple for custom tasks
 }
 
 class AppTheme {
