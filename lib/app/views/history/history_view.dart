@@ -418,7 +418,14 @@ class _StatsTab extends StatelessWidget {
                       ...tasks.map((t) {
                         final count = perTask[t.taskId] ?? 0;
                         final taskColor = _taskColor(t.taskType);
-                        final fraction = totalDone == 0 ? 0.0 : (count / totalDone).clamp(0.0, 1.0);
+
+                        // % of this task out of member's own total duties
+                        final memberPct = totalDone == 0 ? 0 : ((count / totalDone) * 100).round();
+
+                        // % of this member's count out of ALL members' total for this specific task
+                        final taskTotal = histCtrl.totalDutiesPerTask[t.taskId] ?? 0;
+                        final taskPct = taskTotal == 0 ? 0 : ((count / taskTotal) * 100).round();
+
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Row(
@@ -436,37 +443,54 @@ class _StatsTab extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              // Label + bar
+                              // Task label
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            t.taskType.label,
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                                          ),
-                                        ),
-                                        Text(
-                                          '$count done',
-                                          style: TextStyle(fontSize: 12, color: taskColor, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: fraction,
-                                        minHeight: 5,
-                                        backgroundColor: Colors.grey.shade200,
-                                        valueColor: AlwaysStoppedAnimation(taskColor),
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  t.taskType.label,
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                                 ),
+                              ),
+                              // Count chip
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: taskColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: TextStyle(fontSize: 12, color: taskColor, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Member %
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '$memberPct%',
+                                    style: TextStyle(fontSize: 12, color: taskColor, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'of mine',
+                                    style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 10),
+                              // All-members % for this task
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '$taskPct%',
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'of $taskTotal',
+                                    style: TextStyle(fontSize: 9, color: Colors.grey.shade400),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
