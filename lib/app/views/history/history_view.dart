@@ -341,6 +341,16 @@ class _StatsTab extends StatelessWidget {
   final TaskController taskCtrl;
   const _StatsTab({required this.histCtrl, required this.taskCtrl});
 
+  static Color _taskColor(TaskType type) {
+    switch (type) {
+      case TaskType.teaMaking: return AppColors.teaMaking;
+      case TaskType.bathroomCleaning: return AppColors.bathroomCleaning;
+      case TaskType.basinCleaning: return AppColors.basinCleaning;
+      case TaskType.waterFilterRefill: return AppColors.waterFilter;
+      case TaskType.garbageDisposal: return AppColors.garbageDisposal;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -369,25 +379,104 @@ class _StatsTab extends StatelessWidget {
           const SizedBox(height: 16),
           Text('Member Stats', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ...members.map((m) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: AppAvatar(photoUrl: m.photoUrl, name: m.name, radius: 22),
-              title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${m.daysInMess} days in mess'),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${m.totalDutiesDone}',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
+          ...members.map((m) {
+            final perTask = histCtrl.dutiesPerMemberPerTask[m.uid] ?? {};
+            final totalDone = perTask.values.fold(0, (a, b) => a + b);
+            final tasks = taskCtrl.tasks;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  leading: AppAvatar(photoUrl: m.photoUrl, name: m.name, radius: 22),
+                  title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('${m.daysInMess} days in mess · $totalDone duties done'),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$totalDone',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                      const Text('total', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    ],
                   ),
-                  const Text('duties done', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                ],
+                  children: [
+                    const Divider(height: 1),
+                    const SizedBox(height: 10),
+                    if (perTask.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Text('No completed duties yet.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      )
+                    else
+                      ...tasks.map((t) {
+                        final count = perTask[t.taskId] ?? 0;
+                        final taskColor = _taskColor(t.taskType);
+                        final fraction = totalDone == 0 ? 0.0 : (count / totalDone).clamp(0.0, 1.0);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            children: [
+                              // Icon
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: taskColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(t.taskType.icon, style: const TextStyle(fontSize: 16)),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Label + bar
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            t.taskType.label,
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                        Text(
+                                          '$count done',
+                                          style: TextStyle(fontSize: 12, color: taskColor, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: fraction,
+                                        minHeight: 5,
+                                        backgroundColor: Colors.grey.shade200,
+                                        valueColor: AlwaysStoppedAnimation(taskColor),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
               ),
-            ),
-          )),
+            );
+          }),
         ],
       );
     });

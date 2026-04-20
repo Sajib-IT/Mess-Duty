@@ -37,6 +37,16 @@ class HistoryController extends GetxController {
     return map;
   }
 
+  /// Returns { uid → { taskId → count } } for completed duties
+  Map<String, Map<String, int>> get dutiesPerMemberPerTask {
+    final map = <String, Map<String, int>>{};
+    for (final r in history.where((h) => h.status == RotationStatus.completed)) {
+      map[r.assignedUserId] ??= {};
+      map[r.assignedUserId]![r.taskId] = (map[r.assignedUserId]![r.taskId] ?? 0) + 1;
+    }
+    return map;
+  }
+
   int get completedCount => history.where((r) => r.status == RotationStatus.completed).length;
   int get skippedCount => history.where((r) => r.status == RotationStatus.skipped).length;
   int get pendingCount => history.where((r) => r.status == RotationStatus.pending).length;
