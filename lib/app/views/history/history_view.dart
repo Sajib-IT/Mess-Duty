@@ -211,6 +211,7 @@ class _ChartsTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Bar chart: duties per member ──────────────────────────
             Text('Duties per Member',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
@@ -220,8 +221,8 @@ class _ChartsTab extends StatelessWidget {
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY: (data.values.reduce((a, b) => a > b ? a : b) + 2).toDouble(),
-                    barGroups: List.generate(entries.length, (i) {
-                      return BarChartGroupData(
+                  barGroups: List.generate(entries.length, (i) {
+                    return BarChartGroupData(
                       x: i,
                       barRods: [
                         BarChartRodData(
@@ -267,48 +268,156 @@ class _ChartsTab extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            Text('Completion Rate',
+
+            const SizedBox(height: 28),
+
+            // ── Per-member completion rate pie charts ─────────────────
+            Text('Completion Rate by Member',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+              'Completed · Skipped · Pending breakdown per person',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: PieChart(
-                    PieChartData(
-                      sections: [
-                        PieChartSectionData(
-                          value: histCtrl.completionRate,
-                          color: AppColors.success,
-                          title: '${histCtrl.completionRate.toStringAsFixed(0)}%',
-                          radius: 50,
-                          titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        PieChartSectionData(
-                          value: 100 - histCtrl.completionRate,
-                          color: Colors.grey.shade200,
-                          title: '',
-                          radius: 50,
-                        ),
-                      ],
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 10,
-                    ),
+
+            ...members.map((m) {
+              final stats = histCtrl.completionRatePerMember[m.uid] ??
+                  {'completed': 0, 'skipped': 0, 'pending': 0};
+              final completed = stats['completed']!;
+              final skipped   = stats['skipped']!;
+              final pending   = stats['pending']!;
+              final total     = completed + skipped + pending;
+
+              final compPct   = total == 0 ? 0 : (completed / total * 100).round();
+
+              final sections = <PieChartSectionData>[
+                if (completed > 0)
+                  PieChartSectionData(
+                    value: completed.toDouble(),
+                    color: AppColors.success,
+                    title: '$compPct%',
+                    radius: 52,
+                    titleStyle: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(width: 24),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _LegendItem(color: AppColors.success, label: 'Completed (${histCtrl.completedCount})'),
-                    _LegendItem(color: AppColors.warning, label: 'Skipped (${histCtrl.skippedCount})'),
-                    _LegendItem(color: Colors.grey, label: 'Pending (${histCtrl.pendingCount})'),
+                if (skipped > 0)
+                  PieChartSectionData(
+                    value: skipped.toDouble(),
+                    color: AppColors.warning,
+                    title: '${total == 0 ? 0 : (skipped / total * 100).round()}%',
+                    radius: 52,
+                    titleStyle: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                if (pending > 0)
+                  PieChartSectionData(
+                    value: pending.toDouble(),
+                    color: Colors.grey.shade300,
+                    title: '${total == 0 ? 0 : (pending / total * 100).round()}%',
+                    radius: 52,
+                    titleStyle: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+              ];
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
                   ],
                 ),
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Member header
+                    Row(
+                      children: [
+                        AppAvatar(photoUrl: m.photoUrl, name: m.name, radius: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        ),
+                        // Completion rate badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$compPct% done',
+                            style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (total == 0)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('No duties assigned yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        ),
+                      )
+                    else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Pie chart
+                          SizedBox(
+                            width: 130,
+                            height: 130,
+                            child: PieChart(
+                              PieChartData(
+                                sections: sections,
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 20,
+                                centerSpaceColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Legend
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _RateLegend(
+                                color: AppColors.success,
+                                label: 'Completed',
+                                count: completed,
+                                total: total,
+                              ),
+                              const SizedBox(height: 8),
+                              _RateLegend(
+                                color: AppColors.warning,
+                                label: 'Skipped',
+                                count: skipped,
+                                total: total,
+                              ),
+                              const SizedBox(height: 8),
+                              _RateLegend(
+                                color: Colors.grey.shade400,
+                                label: 'Pending',
+                                count: pending,
+                                total: total,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Total: $total duties',
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       );
@@ -316,22 +425,26 @@ class _ChartsTab extends StatelessWidget {
   }
 }
 
-class _LegendItem extends StatelessWidget {
+class _RateLegend extends StatelessWidget {
   final Color color;
   final String label;
-  const _LegendItem({required this.color, required this.label});
+  final int count;
+  final int total;
+  const _RateLegend({required this.color, required this.label, required this.count, required this.total});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontSize: 13)),
-        ],
-      ),
+    final pct = total == 0 ? 0 : (count / total * 100).round();
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text('$label: ', style: const TextStyle(fontSize: 12)),
+        Text(
+          '$count ($pct%)',
+          style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }

@@ -56,6 +56,21 @@ class HistoryController extends GetxController {
     return map;
   }
 
+  /// Returns { uid → { 'completed': N, 'skipped': N, 'pending': N } }
+  Map<String, Map<String, int>> get completionRatePerMember {
+    final map = <String, Map<String, int>>{};
+    for (final r in history) {
+      map[r.assignedUserId] ??= {'completed': 0, 'skipped': 0, 'pending': 0};
+      if (r.status == RotationStatus.completed) {
+        map[r.assignedUserId]!['completed'] = map[r.assignedUserId]!['completed']! + 1;
+      } else if (r.status == RotationStatus.skipped) {
+        map[r.assignedUserId]!['skipped'] = map[r.assignedUserId]!['skipped']! + 1;
+      } else {
+        map[r.assignedUserId]!['pending'] = map[r.assignedUserId]!['pending']! + 1;
+      }
+    }
+    return map;
+  }
   int get completedCount => history.where((r) => r.status == RotationStatus.completed).length;
   int get skippedCount => history.where((r) => r.status == RotationStatus.skipped).length;
   int get pendingCount => history.where((r) => r.status == RotationStatus.pending).length;
