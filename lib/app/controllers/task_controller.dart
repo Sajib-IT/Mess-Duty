@@ -5,6 +5,7 @@ import '../services/task_service.dart';
 import '../services/auth_service.dart';
 import '../services/mess_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/notification_service.dart' show NotificationService;
 import '../utils/app_constants.dart';
 
 class TaskController extends GetxController {
@@ -13,6 +14,9 @@ class TaskController extends GetxController {
   final _messService = Get.find<MessService>();
   PushNotificationService? get _push => Get.isRegistered<PushNotificationService>()
       ? Get.find<PushNotificationService>()
+      : null;
+  NotificationService? get _notif => Get.isRegistered<NotificationService>()
+      ? Get.find<NotificationService>()
       : null;
 
   final tasks = <TaskModel>[].obs;
@@ -78,6 +82,18 @@ class TaskController extends GetxController {
         body: '$myName says they completed $taskLabel. Please verify!',
       );
 
+      // In-app notification to all other members: completionRequest
+      for (final uid in otherUids) {
+        await _notif?.createInAppNotification(
+          userId: uid,
+          messId: rotation.messId,
+          title: 'Task Completion Request',
+          body: '$myName says they completed "$taskLabel". Tap to verify.',
+          type: NotificationType.completionRequest,
+          relatedId: rotation.rotationId,
+        );
+      }
+
       Get.snackbar('Request Sent', 'Waiting for member verification.',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
@@ -108,6 +124,28 @@ class TaskController extends GetxController {
       final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
       final newCount = completion.acceptedBy.length + 1;
       final pct = (newCount / total * 100).toStringAsFixed(0);
+      final isApproved = newCount / total >= 0.4;
+
+      // In-app notification to requester
+      if (isApproved) {
+        final myName = members.firstWhereOrNull((m) => m.uid == currentUid)?.name ?? 'A member';
+        final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
+        final taskLabel = task?.taskType.label ?? 'your task';
+        await _notif?.createInAppNotification(
+          userId: completion.requestedBy,
+          messId: completion.messId,
+          title: '✅ Task Approved!',
+          body: '"$taskLabel" has been verified by enough members ($pct% accepted).',
+          type: NotificationType.completionApproved,
+          relatedId: completion.completionId,
+        );
+        await _push?.sendToUser(
+          userId: completion.requestedBy,
+          title: '✅ Task Approved!',
+          body: '$myName and others verified your "$taskLabel". Great job!',
+        );
+      }
+
       Get.snackbar(
         newCount / total >= 0.4 ? '✅ Task Approved!' : 'Verified',
         newCount / total >= 0.4
@@ -138,6 +176,27 @@ class TaskController extends GetxController {
       final total = completion.totalVoters > 0 ? completion.totalVoters : 1;
       final newCount = completion.rejectedBy.length + 1;
       final pct = (newCount / total * 100).toStringAsFixed(0);
+      final isRejected = newCount / total >= 0.7;
+
+      // In-app notification to requester when rejected
+      if (isRejected) {
+        final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
+        final taskLabel = task?.taskType.label ?? 'your task';
+        await _notif?.createInAppNotification(
+          userId: completion.requestedBy,
+          messId: completion.messId,
+          title: '❌ Task Rejected',
+          body: '"$taskLabel" was rejected ($pct% voted reject). Please redo it.',
+          type: NotificationType.completionRejected,
+          relatedId: completion.completionId,
+        );
+        await _push?.sendToUser(
+          userId: completion.requestedBy,
+          title: '❌ Task Rejected',
+          body: 'Your "$taskLabel" completion was rejected. Please redo it.',
+        );
+      }
+
       Get.snackbar(
         newCount / total >= 0.7 ? '❌ Task Rejected' : 'Rejected',
         newCount / total >= 0.7

@@ -85,21 +85,52 @@ class _NotificationTile extends StatelessWidget {
 
   IconData get _icon {
     switch (notif.type) {
-      case NotificationType.dutyReminder: return Icons.assignment_late;
-      case NotificationType.manualReminder: return Icons.notification_add;
-      case NotificationType.completionRequest: return Icons.pending_actions;
+      case NotificationType.dutyReminder:       return Icons.assignment_late;
+      case NotificationType.manualReminder:     return Icons.notification_add;
+      case NotificationType.completionRequest:  return Icons.pending_actions;
       case NotificationType.completionApproved: return Icons.verified;
-      case NotificationType.invitation: return Icons.mail;
+      case NotificationType.completionRejected: return Icons.cancel_outlined;
+      case NotificationType.invitation:         return Icons.mail_outline;
+      case NotificationType.invitationAccepted: return Icons.how_to_reg;
+      case NotificationType.memberJoined:       return Icons.person_add_alt_1;
+      case NotificationType.memberLeft:         return Icons.person_remove_alt_1;
+      case NotificationType.dutySkipped:        return Icons.skip_next;
+      case NotificationType.rotationStarted:    return Icons.rotate_right;
+      case NotificationType.messUpdated:        return Icons.edit_note;
     }
   }
 
   Color get _color {
     switch (notif.type) {
-      case NotificationType.dutyReminder: return AppColors.warning;
-      case NotificationType.manualReminder: return AppColors.info;
-      case NotificationType.completionRequest: return AppColors.primary;
+      case NotificationType.dutyReminder:       return AppColors.warning;
+      case NotificationType.manualReminder:     return AppColors.info;
+      case NotificationType.completionRequest:  return AppColors.primary;
       case NotificationType.completionApproved: return AppColors.success;
-      case NotificationType.invitation: return AppColors.accent;
+      case NotificationType.completionRejected: return AppColors.error;
+      case NotificationType.invitation:         return AppColors.accent;
+      case NotificationType.invitationAccepted: return AppColors.success;
+      case NotificationType.memberJoined:       return AppColors.primaryLight;
+      case NotificationType.memberLeft:         return Colors.blueGrey;
+      case NotificationType.dutySkipped:        return AppColors.warning;
+      case NotificationType.rotationStarted:    return AppColors.primary;
+      case NotificationType.messUpdated:        return AppColors.info;
+    }
+  }
+
+  String get _typeLabel {
+    switch (notif.type) {
+      case NotificationType.dutyReminder:       return 'Duty Reminder';
+      case NotificationType.manualReminder:     return 'Reminder';
+      case NotificationType.completionRequest:  return 'Verification';
+      case NotificationType.completionApproved: return 'Approved';
+      case NotificationType.completionRejected: return 'Rejected';
+      case NotificationType.invitation:         return 'Invitation';
+      case NotificationType.invitationAccepted: return 'Joined';
+      case NotificationType.memberJoined:       return 'New Member';
+      case NotificationType.memberLeft:         return 'Member Left';
+      case NotificationType.dutySkipped:        return 'Skipped';
+      case NotificationType.rotationStarted:    return 'Rotation';
+      case NotificationType.messUpdated:        return 'Mess Update';
     }
   }
 
@@ -118,51 +149,91 @@ class _NotificationTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: notif.isRead ? Colors.white : _color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
+          color: notif.isRead ? Colors.white : _color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: notif.isRead ? Colors.grey.shade200 : _color.withValues(alpha: 0.25),
+            color: notif.isRead ? Colors.grey.shade200 : _color.withValues(alpha: 0.3),
           ),
+          boxShadow: [
+            if (!notif.isRead)
+              BoxShadow(color: _color.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2)),
+          ],
         ),
-        child: ListTile(
+        child: InkWell(
           onTap: () => ctrl.markRead(notif.notificationId),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon circle
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(_icon, color: _color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Type chip + time
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _typeLabel,
+                              style: TextStyle(fontSize: 10, color: _color, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            AppHelpers.timeAgo(notif.createdAt),
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                          ),
+                          if (!notif.isRead) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      // Title
+                      Text(
+                        notif.title,
+                        style: TextStyle(
+                          fontWeight: notif.isRead ? FontWeight.w500 : FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      // Body
+                      Text(
+                        notif.body,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            child: Icon(_icon, color: _color, size: 20),
           ),
-          title: Text(
-            notif.title,
-            style: TextStyle(
-              fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(notif.body, style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 2),
-              Text(
-                AppHelpers.timeAgo(notif.createdAt),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-              ),
-            ],
-          ),
-          trailing: !notif.isRead
-              ? Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
-                )
-              : null,
         ),
       ),
     );
   }
 }
-
-

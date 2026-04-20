@@ -59,7 +59,14 @@ enum NotificationType {
   manualReminder,
   completionRequest,
   completionApproved,
+  completionRejected,
   invitation,
+  invitationAccepted,
+  memberJoined,
+  memberLeft,
+  dutySkipped,
+  rotationStarted,
+  messUpdated,
 }
 
 extension RotationStatusExt on RotationStatus {
