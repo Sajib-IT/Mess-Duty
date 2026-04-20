@@ -409,19 +409,37 @@ class _ContactButtons extends StatelessWidget {
           case 'whatsapp':
             if (phone.isNotEmpty) {
               final cleaned = phone.startsWith('+') ? phone.substring(1) : phone;
-              await _launch(Uri.parse(
-                  'https://wa.me/$cleaned?text=Hey+it\'s+your+turn+for+a+mess+duty!'));
+              final taskLabel = task.taskType.label;
+              final taskIcon  = task.taskType.icon;
+              final name      = member?.name.split(' ').first ?? 'there';
+              final msg = Uri.encodeComponent(
+                'Hi $name 👋,\n\n'
+                'This is a friendly reminder from MessDuty.\n\n'
+                '$taskIcon *$taskLabel* is assigned to you and is currently pending completion.\n\n'
+                'Please complete your duty at your earliest convenience so your mess mates are not affected.\n\n'
+                'Thank you! 🙏',
+              );
+              await _launch(Uri.parse('https://wa.me/$cleaned?text=$msg'));
             }
             break;
           case 'email':
-            await _launch(Uri(
-              scheme: 'mailto',
-              path: email,
-              queryParameters: {
-                'subject': 'MessDuty Reminder',
-                'body': 'Hey, it\'s your turn for a mess duty!',
-              },
-            ));
+            final taskLabel = task.taskType.label;
+            final taskIcon  = task.taskType.icon;
+            final name      = member?.name.split(' ').first ?? 'there';
+            final subject   = Uri.encodeComponent('[MessDuty] Reminder: $taskLabel Duty Pending');
+            final body      = Uri.encodeComponent(
+              'Hi $name,\n\n'
+              'This is a friendly reminder that your mess duty "$taskIcon $taskLabel" '
+              'is currently assigned to you and is pending completion.\n\n'
+              'Please ensure you complete it at your earliest convenience so that your mess '
+              'mates are not inconvenienced.\n\n'
+              'If you have already completed it, please mark it as done in the MessDuty app '
+              'so the team can verify.\n\n'
+              'Thank you for your cooperation!\n\n'
+              'Best regards,\n'
+              'MessDuty App',
+            );
+            await _launch(Uri.parse('mailto:$email?subject=$subject&body=$body'));
             break;
         }
       },
@@ -469,4 +487,5 @@ class _ContactButtons extends StatelessWidget {
     );
   }
 }
+
 
