@@ -31,11 +31,35 @@ class TasksView extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateTaskDialog(context, taskCtrl),
-        icon: const Icon(Icons.add),
-        label: const Text('New Task'),
-        backgroundColor: const Color(0xFF7B1FA2),
+      floatingActionButton: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.9, end: 1),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) {
+          return Transform.scale(scale: scale, child: child);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8E24AA), Color(0xFF6A1B9A)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.purple.withOpacity(0.3),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: FloatingActionButton.extended(
+            onPressed: () => _showCreateTaskDialog(context, taskCtrl),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text("Create Task"),
+          ),
+        ),
       ),
       body: Obx(() {
         final tasks = taskCtrl.tasks;
@@ -47,9 +71,15 @@ class TasksView extends StatelessWidget {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.fromLTRB(
+            8,
+            8,
+            8,
+            96,
+          ), // bottom padding for FAB
           itemCount: tasks.length,
-          itemBuilder: (ctx, i) => _TaskCard(task: tasks[i], taskCtrl: taskCtrl, authCtrl: authCtrl),
+          itemBuilder: (ctx, i) =>
+              _TaskCard(task: tasks[i], taskCtrl: taskCtrl, authCtrl: authCtrl),
         );
       }),
     );
@@ -57,88 +87,219 @@ class TasksView extends StatelessWidget {
 }
 
 void _showCreateTaskDialog(BuildContext context, TaskController taskCtrl) {
-  final labelCtrl = TextEditingController();
-  final selectedIcon = '📌'.obs;
+  showDialog(
+    context: context,
+    builder: (_) => _CreateTaskDialog(taskCtrl: taskCtrl),
+  );
+}
 
-  const emojis = [
-    '📌','🧹','🛁','🍳','🧺','🪣','💡','🔧','🪴','🧴',
-    '🚗','📦','🛒','🍽️','🧊','🪟','🚪','🛏️','🪑','🧯',
+class _CreateTaskDialog extends StatefulWidget {
+  final TaskController taskCtrl;
+  const _CreateTaskDialog({required this.taskCtrl});
+  @override
+  State<_CreateTaskDialog> createState() => _CreateTaskDialogState();
+}
+
+class _CreateTaskDialogState extends State<_CreateTaskDialog> {
+  final _labelCtrl = TextEditingController();
+  String _selectedIcon = '📌';
+
+  static const _emojis = [
+    '📌',
+    '🧹',
+    '🛁',
+    '🍳',
+    '🧺',
+    '🪣',
+    '💡',
+    '🔧',
+    '🪴',
+    '🧴',
+    '🚗',
+    '📦',
+    '🛒',
+    '🍽️',
+    '🧊',
+    '🪟',
+    '🚪',
+    '🛏️',
+    '🪑',
+    '🧯',
   ];
 
-  Get.dialog(
-    AlertDialog(
-      title: const Row(
-        children: [
-          Icon(Icons.add_task, color: Color(0xFF7B1FA2)),
-          SizedBox(width: 8),
-          Text('Create New Task'),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: labelCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Task Name *',
-                hintText: 'e.g. Room Cleaning',
-                prefixIcon: Icon(Icons.edit_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Choose Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            const SizedBox(height: 8),
-            Obx(() => Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: emojis.map((e) => GestureDetector(
-                onTap: () => selectedIcon.value = e,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: selectedIcon.value == e
-                        ? const Color(0xFF7B1FA2).withValues(alpha: 0.15)
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selectedIcon.value == e
-                          ? const Color(0xFF7B1FA2)
-                          : Colors.transparent,
-                      width: 2,
+  @override
+  Widget build(BuildContext context) {
+    const primary = Color(0xFF7B1FA2);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 8,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 🔥 Header
+              Row(
+                children: const [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Color(0xFFEDE7F6),
+                    child: Icon(Icons.add_task, color: primary),
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Create Task',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  child: Center(child: Text(e, style: const TextStyle(fontSize: 20))),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 📝 Input Field
+              TextField(
+                controller: _labelCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Task Name',
+                  hintText: 'e.g. Room Cleaning',
+                  prefixIcon: const Icon(Icons.edit_outlined),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding:
+                  const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-              )).toList(),
-            )),
-          ],
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 🎯 Icon Section
+              const Text(
+                'Choose Icon',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: _emojis.map((e) {
+                  final selected = _selectedIcon == e;
+
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedIcon = e),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? primary.withOpacity(0.15)
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected ? primary : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          e,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 24),
+
+              /// ⚡ Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8E24AA), Color(0xFF6A1B9A)],
+                        ),
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final label = _labelCtrl.text.trim();
+
+                          if (label.isEmpty) {
+                            Get.snackbar(
+                              'Required',
+                              'Please enter a task name.',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                            return;
+                          }
+
+                          Navigator.pop(context);
+
+                          await widget.taskCtrl.createTask(
+                            label: label,
+                            icon: _selectedIcon,
+                          );
+                        },
+                        icon: Text(
+                          _selectedIcon,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        label: const Text(
+                          'Create',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-        Obx(() => ElevatedButton.icon(
-          onPressed: () async {
-            final label = labelCtrl.text.trim();
-            if (label.isEmpty) {
-              Get.snackbar('Required', 'Please enter a task name.',
-                  snackPosition: SnackPosition.BOTTOM);
-              return;
-            }
-            Get.back();
-            await taskCtrl.createTask(label: label, icon: selectedIcon.value);
-          },
-          icon: Text(selectedIcon.value, style: const TextStyle(fontSize: 16)),
-          label: const Text('Create'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
-        )),
-      ],
-    ),
-  );
+    );
+  }
 }
 
 class _TaskCard extends StatelessWidget {
@@ -146,32 +307,47 @@ class _TaskCard extends StatelessWidget {
   final TaskController taskCtrl;
   final AuthController authCtrl;
 
-  const _TaskCard({required this.task, required this.taskCtrl, required this.authCtrl});
+  const _TaskCard({
+    required this.task,
+    required this.taskCtrl,
+    required this.authCtrl,
+  });
 
   Color get _color {
     switch (task.taskType) {
-      case TaskType.teaMaking: return AppColors.teaMaking;
-      case TaskType.bathroomCleaning: return AppColors.bathroomCleaning;
-      case TaskType.basinCleaning: return AppColors.basinCleaning;
-      case TaskType.waterFilterRefill: return AppColors.waterFilter;
-      case TaskType.garbageDisposal: return AppColors.garbageDisposal;
-      case TaskType.custom: return AppColors.customTask;
+      case TaskType.teaMaking:
+        return AppColors.teaMaking;
+      case TaskType.bathroomCleaning:
+        return AppColors.bathroomCleaning;
+      case TaskType.basinCleaning:
+        return AppColors.basinCleaning;
+      case TaskType.waterFilterRefill:
+        return AppColors.waterFilter;
+      case TaskType.garbageDisposal:
+        return AppColors.garbageDisposal;
+      case TaskType.custom:
+        return AppColors.customTask;
     }
   }
 
   void _confirmDelete(TaskModel t) {
-    Get.dialog(AlertDialog(
-      title: const Text('Delete Task'),
-      content: Text('Delete "${t.displayLabel}"? This cannot be undone.'),
-      actions: [
-        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-        ElevatedButton(
-          onPressed: () { Get.back(); taskCtrl.deleteTask(t.taskId, t.displayLabel); },
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-          child: const Text('Delete'),
-        ),
-      ],
-    ));
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Delete Task'),
+        content: Text('Delete "${t.displayLabel}"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              taskCtrl.deleteTask(t.taskId, t.displayLabel);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -191,37 +367,68 @@ class _TaskCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
-              child: Text(task.displayIcon, style: const TextStyle(fontSize: 22)),
+              child: Text(
+                task.displayIcon,
+                style: const TextStyle(fontSize: 22),
+              ),
             ),
           ),
-          title: Text(task.displayLabel,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          subtitle: Text('${groups.length} group${groups.length != 1 ? 's' : ''}',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.settings, size: 18),
-                onPressed: () => Get.toNamed(Routes.TASK_DETAIL, arguments: task),
-                tooltip: 'Configure Groups',
-              ),
-              if (task.taskType == TaskType.custom)
+          title: Text(
+            task.displayLabel,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          subtitle: Text(
+            '${groups.length} group${groups.length != 1 ? 's' : ''}',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+          ),
+          trailing: SizedBox(
+            width: task.taskType == TaskType.custom ? 120 : 68,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                  onPressed: () => _confirmDelete(task),
-                  tooltip: 'Delete Task',
+                  icon: const Icon(Icons.settings, size: 18),
+                  onPressed: () =>
+                      Get.toNamed(Routes.TASK_DETAIL, arguments: task),
+                  tooltip: 'Configure Groups',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
-              const Icon(Icons.expand_more),
-            ],
+                if (task.taskType == TaskType.custom)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: AppColors.error,
+                    ),
+                    onPressed: () => _confirmDelete(task),
+                    tooltip: 'Delete Task',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                const Icon(Icons.expand_more, size: 20),
+              ],
+            ),
           ),
           children: [
             ...groups.map((group) {
-              final rotation = taskCtrl.getCurrentRotationForGroup(group.groupId);
+              final rotation = taskCtrl.getCurrentRotationForGroup(
+                group.groupId,
+              );
               final assignedMember = rotation != null
-                  ? members.firstWhereOrNull((m) => m.uid == rotation.assignedUserId)
+                  ? members.firstWhereOrNull(
+                      (m) => m.uid == rotation.assignedUserId,
+                    )
                   : null;
-              final isMe = rotation?.assignedUserId == authCtrl.currentUser.value?.uid;
+              final isMe =
+                  rotation?.assignedUserId == authCtrl.currentUser.value?.uid;
 
               // Compute next 2 members in rotation (skip away members)
               final available = group.memberIds
@@ -231,7 +438,11 @@ class _TaskCard extends StatelessWidget {
               if (available.isNotEmpty) {
                 // currentRotationIndex already points to who's NEXT after current
                 final startIdx = group.currentRotationIndex % available.length;
-                for (int offset = 0; offset < 2 && offset < available.length - 1; offset++) {
+                for (
+                  int offset = 0;
+                  offset < 2 && offset < available.length - 1;
+                  offset++
+                ) {
                   final uid = available[(startIdx + offset) % available.length];
                   // skip the currently assigned person
                   if (uid == rotation?.assignedUserId) continue;
@@ -241,11 +452,17 @@ class _TaskCard extends StatelessWidget {
                 }
                 // fallback: if we didn't get 2, fill from rotation order
                 if (nextMembers.length < 2) {
-                  for (int offset = 0; offset < available.length && nextMembers.length < 2; offset++) {
-                    final uid = available[(startIdx + offset) % available.length];
+                  for (
+                    int offset = 0;
+                    offset < available.length && nextMembers.length < 2;
+                    offset++
+                  ) {
+                    final uid =
+                        available[(startIdx + offset) % available.length];
                     if (uid == rotation?.assignedUserId) continue;
                     final m = members.firstWhereOrNull((m) => m.uid == uid);
-                    if (m != null && !nextMembers.any((n) => n.uid == m.uid)) nextMembers.add(m);
+                    if (m != null && !nextMembers.any((n) => n.uid == m.uid))
+                      nextMembers.add(m);
                   }
                 }
               }
@@ -279,14 +496,18 @@ class _TaskCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: group.memberIds.take(4).map((id) {
-                                final m = members.firstWhereOrNull((m) => m.uid == id);
+                                final m = members.firstWhereOrNull(
+                                  (m) => m.uid == id,
+                                );
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 2),
                                   child: AppAvatar(
                                     photoUrl: m?.photoUrl,
                                     name: m?.name ?? '?',
                                     radius: 12,
-                                    backgroundColor: m?.isAway == true ? Colors.grey : _color,
+                                    backgroundColor: m?.isAway == true
+                                        ? Colors.grey
+                                        : _color,
                                   ),
                                 );
                               }).toList(),
@@ -312,7 +533,9 @@ class _TaskCard extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isMe ? 'Your turn!' : '${assignedMember?.name ?? "Unknown"}\'s turn',
+                                    isMe
+                                        ? 'Your turn!'
+                                        : '${assignedMember?.name ?? "Unknown"}\'s turn',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: isMe ? _color : null,
@@ -320,23 +543,39 @@ class _TaskCard extends StatelessWidget {
                                   ),
                                   Text(
                                     rotation.status.value.capitalizeFirst ?? '',
-                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            if (isMe && rotation.status == RotationStatus.pending)
+                            if (isMe &&
+                                rotation.status == RotationStatus.pending)
                               ElevatedButton(
-                                onPressed: () => taskCtrl.submitCompletion(rotation),
+                                onPressed: () =>
+                                    taskCtrl.submitCompletion(rotation),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _color,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   minimumSize: Size.zero,
                                 ),
-                                child: const Text('Mark Done', style: TextStyle(fontSize: 12)),
+                                child: const Text(
+                                  'Mark Done',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                               )
-                            else if (!isMe && rotation.status == RotationStatus.pending)
-                              _ContactButtons(member: assignedMember, rotation: rotation, task: task),
+                            else if (!isMe &&
+                                rotation.status == RotationStatus.pending)
+                              _ContactButtons(
+                                member: assignedMember,
+                                rotation: rotation,
+                                task: task,
+                              ),
                           ],
                         ),
                       ),
@@ -347,11 +586,18 @@ class _TaskCard extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
                           child: Row(
                             children: [
-                              Icon(Icons.skip_next, size: 14, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.skip_next,
+                                size: 14,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Up next: ',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade400,
+                                ),
                               ),
                               ...nextMembers.asMap().entries.map((e) {
                                 final idx = e.key;
@@ -360,12 +606,20 @@ class _TaskCard extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (idx > 0)
-                                      Text(' → ', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                                      Text(
+                                        ' → ',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
                                     AppAvatar(
                                       photoUrl: m.photoUrl,
                                       name: m.name,
                                       radius: 10,
-                                      backgroundColor: _color.withValues(alpha: 0.6),
+                                      backgroundColor: _color.withValues(
+                                        alpha: 0.6,
+                                      ),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -388,13 +642,22 @@ class _TaskCard extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
                         child: Row(
                           children: [
-                            Text('No active rotation',
-                                style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                            Text(
+                              'No active rotation',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
                             const Spacer(),
                             TextButton.icon(
-                              onPressed: () => taskCtrl.generateRotationForGroup(group.groupId),
+                              onPressed: () => taskCtrl
+                                  .generateRotationForGroup(group.groupId),
                               icon: const Icon(Icons.refresh, size: 16),
-                              label: const Text('Start', style: TextStyle(fontSize: 12)),
+                              label: const Text(
+                                'Start',
+                                style: TextStyle(fontSize: 12),
+                              ),
                             ),
                           ],
                         ),
@@ -421,14 +684,17 @@ class _ContactButtons extends StatelessWidget {
 
   Future<void> _launch(Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('Error', 'Could not open app',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        'Could not open app',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
   void _showReminderDialog(BuildContext context) {
-    final taskLabel  = task.taskType.label;
-    final taskIcon   = task.taskType.icon;
+    final taskLabel = task.displayLabel;
+    final taskIcon = task.displayIcon;
     final memberName = member?.name ?? 'the member';
 
     showDialog(
@@ -491,7 +757,10 @@ class _ContactButtons extends StatelessWidget {
                 colorText: Colors.white,
                 margin: const EdgeInsets.all(16),
                 borderRadius: 12,
-                icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                icon: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                ),
               );
             },
             child: const Text('Send Reminder'),
@@ -508,8 +777,11 @@ class _ContactButtons extends StatelessWidget {
     final email = member!.email;
 
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.notifications_active_outlined,
-          size: 22, color: AppColors.primary),
+      icon: const Icon(
+        Icons.notifications_active_outlined,
+        size: 22,
+        color: AppColors.primary,
+      ),
       tooltip: 'Remind / Contact',
       onSelected: (v) async {
         switch (v) {
@@ -517,14 +789,17 @@ class _ContactButtons extends StatelessWidget {
             _showReminderDialog(context);
             break;
           case 'call':
-            if (phone.isNotEmpty) await _launch(Uri(scheme: 'tel', path: phone));
+            if (phone.isNotEmpty)
+              await _launch(Uri(scheme: 'tel', path: phone));
             break;
           case 'whatsapp':
             if (phone.isNotEmpty) {
-              final cleaned = phone.startsWith('+') ? phone.substring(1) : phone;
-              final taskLabel = task.taskType.label;
-              final taskIcon  = task.taskType.icon;
-              final name      = member?.name.split(' ').first ?? 'there';
+              final cleaned = phone.startsWith('+')
+                  ? phone.substring(1)
+                  : phone;
+              final taskLabel = task.displayLabel;
+              final taskIcon = task.displayIcon;
+              final name = member?.name.split(' ').first ?? 'there';
               final msg = Uri.encodeComponent(
                 'Hi $name 👋,\n\n'
                 'This is a friendly reminder from MessDuty.\n\n'
@@ -536,11 +811,13 @@ class _ContactButtons extends StatelessWidget {
             }
             break;
           case 'email':
-            final taskLabel = task.taskType.label;
-            final taskIcon  = task.taskType.icon;
-            final name      = member?.name.split(' ').first ?? 'there';
-            final subject   = Uri.encodeComponent('[MessDuty] Reminder: $taskLabel Duty Pending');
-            final body      = Uri.encodeComponent(
+            final taskLabel = task.displayLabel;
+            final taskIcon = task.displayIcon;
+            final name = member?.name.split(' ').first ?? 'there';
+            final subject = Uri.encodeComponent(
+              '[MessDuty] Reminder: $taskLabel Duty Pending',
+            );
+            final body = Uri.encodeComponent(
               'Hi $name,\n\n'
               'This is a friendly reminder that your mess duty "$taskIcon $taskLabel" '
               'is currently assigned to you and is pending completion.\n\n'
@@ -552,7 +829,9 @@ class _ContactButtons extends StatelessWidget {
               'Best regards,\n'
               'MessDuty App',
             );
-            await _launch(Uri.parse('mailto:$email?subject=$subject&body=$body'));
+            await _launch(
+              Uri.parse('mailto:$email?subject=$subject&body=$body'),
+            );
             break;
         }
       },
@@ -563,8 +842,10 @@ class _ContactButtons extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.send, color: AppColors.primary),
             title: const Text('Send Reminder'),
-            subtitle: const Text('Push notification to duty member',
-                style: TextStyle(fontSize: 11)),
+            subtitle: const Text(
+              'Push notification to duty member',
+              style: TextStyle(fontSize: 11),
+            ),
           ),
         ),
         if (phone.isNotEmpty) ...[
@@ -600,5 +881,3 @@ class _ContactButtons extends StatelessWidget {
     );
   }
 }
-
-
