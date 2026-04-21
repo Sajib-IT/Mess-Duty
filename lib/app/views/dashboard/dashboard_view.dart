@@ -126,6 +126,22 @@ class _DashboardHome extends StatelessWidget {
             pinned: true,
             backgroundColor: AppColors.primary,
             actions: [
+              // Refresh button
+              Obx(() {
+                final refreshing = messCtrl.isRefreshing.value || taskCtrl.isRefreshing.value;
+                return IconButton(
+                  icon: refreshing
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: refreshing ? null : () {
+                    messCtrl.refresh();
+                    taskCtrl.refresh();
+                  },
+                  tooltip: 'Refresh',
+                );
+              }),
               Obx(() => Stack(
                     children: [
                       IconButton(
@@ -319,6 +335,13 @@ class _DashboardHome extends StatelessWidget {
                 ),
 
                 Obx(() {
+                  if (taskCtrl.isRefreshing.value || messCtrl.isRefreshing.value) {
+                    return ShimmerWrapper(
+                      child: Column(
+                        children: List.generate(4, (_) => const ShimmerListTile()),
+                      ),
+                    );
+                  }
                   final rotations = taskCtrl.upcomingRotations;
                   final tasks = taskCtrl.tasks;
                   final members = taskCtrl.members;

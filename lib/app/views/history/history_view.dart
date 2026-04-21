@@ -84,6 +84,9 @@ class _TimelineTab extends StatelessWidget {
         )),
         Expanded(
           child: Obx(() {
+            if (histCtrl.isRefreshing.value) {
+              return ShimmerList(count: 6, tileBuilder: () => const ShimmerListTile());
+            }
             final history = histCtrl.filteredHistory;
             if (history.isEmpty) {
               return const EmptyStateWidget(

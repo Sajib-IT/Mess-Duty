@@ -10,13 +10,28 @@ class HistoryController extends GetxController {
 
   final history = <DutyRotationModel>[].obs;
   final filter = 'all'.obs; // 'all', 'mine', 'week', 'month'
+  final isRefreshing = false.obs;
 
   String get currentUid => _authService.currentFirebaseUser?.uid ?? '';
 
+  String? _messId;
+
   void initialize(String messId) {
+    _messId = messId;
     _taskService.getHistoryStream(messId).listen((h) {
       history.value = h;
     });
+  }
+
+  Future<void> refresh() async {
+    if (_messId == null || isRefreshing.value) return;
+    isRefreshing.value = true;
+    try {
+      initialize(_messId!);
+    } finally {
+      await Future.delayed(const Duration(milliseconds: 600));
+      isRefreshing.value = false;
+    }
   }
 
   List<DutyRotationModel> get filteredHistory {

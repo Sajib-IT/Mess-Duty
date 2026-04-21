@@ -32,6 +32,20 @@ class MessController extends GetxController {
 
   String get currentUid => _authService.currentFirebaseUser?.uid ?? '';
 
+  final isRefreshing = false.obs;
+
+  Future<void> refresh() async {
+    if (isRefreshing.value) return;
+    isRefreshing.value = true;
+    try {
+      final messId = currentMess.value?.messId;
+      if (messId != null) loadMess(messId);
+    } finally {
+      await Future.delayed(const Duration(milliseconds: 600));
+      isRefreshing.value = false;
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();

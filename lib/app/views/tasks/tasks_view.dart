@@ -24,6 +24,15 @@ class TasksView extends StatelessWidget {
         title: const Text('Mess Tasks'),
         automaticallyImplyLeading: false,
         actions: [
+          Obx(() => IconButton(
+            icon: taskCtrl.isRefreshing.value
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.refresh),
+            onPressed: taskCtrl.isRefreshing.value ? null : taskCtrl.refresh,
+            tooltip: 'Refresh',
+          )),
           IconButton(
             icon: const Icon(Icons.add_task),
             onPressed: () => Get.toNamed(Routes.TASK_DETAIL),
@@ -62,6 +71,9 @@ class TasksView extends StatelessWidget {
         ),
       ),
       body: Obx(() {
+        if (taskCtrl.isRefreshing.value) {
+          return ShimmerList(count: 5, tileBuilder: () => const ShimmerListTile());
+        }
         final tasks = taskCtrl.tasks;
         if (tasks.isEmpty) {
           return const EmptyStateWidget(

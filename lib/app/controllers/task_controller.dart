@@ -29,6 +29,19 @@ class TaskController extends GetxController {
 
   String get currentUid => _authService.currentFirebaseUser?.uid ?? '';
 
+  final isRefreshing = false.obs;
+
+  Future<void> refresh() async {
+    if (_messId == null || isRefreshing.value) return;
+    isRefreshing.value = true;
+    try {
+      initialize(_messId!);
+    } finally {
+      await Future.delayed(const Duration(milliseconds: 600));
+      isRefreshing.value = false;
+    }
+  }
+
   String? _messId;
 
   void initialize(String messId) {

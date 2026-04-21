@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
 import '../theme/app_theme.dart';
 
 /// Platform-adaptive back button: arrow_back_ios_new on iOS, arrow_back on Android.
@@ -220,3 +221,135 @@ class EmptyStateWidget extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shimmer helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A single shimmer placeholder box.
+class ShimmerBox extends StatelessWidget {
+  final double width;
+  final double height;
+  final double radius;
+  const ShimmerBox({
+    super.key,
+    this.width = double.infinity,
+    this.height = 16,
+    this.radius = 8,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+/// Wraps [child] in a shimmer animation.
+class ShimmerWrapper extends StatelessWidget {
+  final Widget child;
+  const ShimmerWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: child,
+    );
+  }
+}
+
+/// Shimmer skeleton for a card-style list tile (icon + two lines).
+class ShimmerListTile extends StatelessWidget {
+  const ShimmerListTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const ShimmerBox(width: 44, height: 44, radius: 12),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(width: MediaQuery.of(context).size.width * 0.45, height: 14),
+                const SizedBox(height: 8),
+                ShimmerBox(width: MediaQuery.of(context).size.width * 0.3, height: 11),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shimmer skeleton for a notification tile.
+class ShimmerNotifTile extends StatelessWidget {
+  const ShimmerNotifTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ShimmerBox(width: 40, height: 40, radius: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(width: MediaQuery.of(context).size.width * 0.55, height: 12),
+                const SizedBox(height: 8),
+                ShimmerBox(width: MediaQuery.of(context).size.width * 0.75, height: 11),
+                const SizedBox(height: 6),
+                ShimmerBox(width: MediaQuery.of(context).size.width * 0.6, height: 11),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Full-page shimmer list — shows [count] shimmer tiles wrapped in animation.
+class ShimmerList extends StatelessWidget {
+  final int count;
+  final Widget Function() tileBuilder;
+  const ShimmerList({super.key, this.count = 5, required this.tileBuilder});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrapper(
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: count,
+        itemBuilder: (_, __) => tileBuilder(),
+      ),
+    );
+  }
+}

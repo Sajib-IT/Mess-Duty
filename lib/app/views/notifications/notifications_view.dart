@@ -26,6 +26,12 @@ class NotificationsView extends StatelessWidget {
         ],
       ),
       body: Obx(() {
+        if (ctrl.isRefreshing.value) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: ShimmerList(count: 6, tileBuilder: () => const ShimmerNotifTile()),
+          );
+        }
         final notifs = ctrl.notifications;
         if (notifs.isEmpty) {
           return const EmptyStateWidget(
@@ -237,3 +243,4 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 }
+
