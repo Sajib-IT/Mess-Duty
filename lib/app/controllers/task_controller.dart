@@ -178,11 +178,12 @@ class TaskController extends GetxController {
       final newCount = completion.rejectedBy.length + 1;
       final pct = (newCount / total * 100).toStringAsFixed(0);
       final isRejected = newCount / total >= 0.7;
+      final myName = members.firstWhereOrNull((m) => m.uid == currentUid)?.name ?? 'A member';
+      final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
+      final taskLabel = task?.displayLabel ?? 'your task';
 
-      // In-app notification to requester when rejected
       if (isRejected) {
-        final task = tasks.firstWhereOrNull((t) => t.taskId == completion.taskId);
-        final taskLabel = task?.displayLabel ?? 'your task';
+        // ── Threshold reached: task rejected / must redo ───────────────
         await _notif?.createInAppNotification(
           userId: completion.requestedBy,
           messId: completion.messId,
@@ -193,16 +194,31 @@ class TaskController extends GetxController {
         );
         await _push?.sendToUser(
           userId: completion.requestedBy,
-          title: '❌ Task Rejected',
-          body: 'Your "$taskLabel" completion was rejected. Please redo it.',
+          title: '❌ Task Rejected — Please Redo',
+          body: 'Your "$taskLabel" was rejected by $pct% of members. Please complete it again.',
+        );
+      } else {
+        // ── Partial reject: notify requester of progress ───────────────
+        await _notif?.createInAppNotification(
+          userId: completion.requestedBy,
+          messId: completion.messId,
+          title: '👎 Rejected by $myName',
+          body: '$myName rejected your "$taskLabel" completion. ($newCount/$total rejected so far)',
+          type: NotificationType.completionRequest,
+          relatedId: completion.completionId,
+        );
+        await _push?.sendToUser(
+          userId: completion.requestedBy,
+          title: '👎 $myName rejected your task',
+          body: '"$taskLabel": $newCount of $total rejections so far.',
         );
       }
 
       Get.snackbar(
-        newCount / total >= 0.7 ? '❌ Task Rejected' : 'Rejected',
-        newCount / total >= 0.7
+        isRejected ? '❌ Task Rejected' : '👎 Rejected',
+        isRejected
             ? 'Task rejected ($pct% rejected). Member must redo it.'
-            : 'Your rejection recorded. ($pct% rejected so far)',
+            : 'Your rejection recorded. ($newCount/$total rejected so far)',
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {

@@ -332,24 +332,29 @@ class _GroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedIds = groupData['memberIds'] as List<String>;
+    final selectedCount = members.where((m) => selectedIds.contains(m.uid)).length;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Group name row ────────────────────────────────────────
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     initialValue: groupData['label'] as String,
                     onChanged: onLabelChanged,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Group Name',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      prefixIcon: const Icon(Icons.group_outlined, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ),
@@ -357,27 +362,142 @@ class _GroupCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline, color: AppColors.error),
                     onPressed: onRemove,
+                    tooltip: 'Remove Group',
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text('Members:', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: members.map((m) {
-                final selected = selectedIds.contains(m.uid);
-                return FilterChip(
-                  avatar: AppAvatar(photoUrl: m.photoUrl, name: m.name, radius: 12),
-                  label: Text(m.name.split(' ').first),
-                  selected: selected,
-                  onSelected: (_) => onToggleMember(m.uid),
-                  selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                  checkmarkColor: AppColors.primary,
-                );
-              }).toList(),
+
+            const SizedBox(height: 14),
+
+            // ── Members header ────────────────────────────────────────
+            Row(
+              children: [
+                const Icon(Icons.people_alt_outlined, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'Members',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$selectedCount / ${members.length} selected',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
+
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+
+            // ── Member list ───────────────────────────────────────────
+            ...members.map((m) {
+              final selected = selectedIds.contains(m.uid);
+              return InkWell(
+                onTap: () => onToggleMember(m.uid),
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withValues(alpha: 0.08)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary.withValues(alpha: 0.35)
+                          : Colors.transparent,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Avatar with away badge
+                      Stack(
+                        children: [
+                          AppAvatar(
+                            photoUrl: m.photoUrl,
+                            name: m.name,
+                            radius: 20,
+                            backgroundColor: selected
+                                ? AppColors.primary
+                                : Colors.grey.shade400,
+                          ),
+                          if (m.isAway)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 1),
+                                ),
+                                child: const Text('🏖️', style: TextStyle(fontSize: 9)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Name + status
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              m.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: selected ? AppColors.primary : Colors.black87,
+                              ),
+                            ),
+                            if (m.isAway)
+                              Text(
+                                'Away — skipped in rotation',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.orange.shade600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      // Check indicator
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: selected
+                            ? const Icon(Icons.check_circle,
+                                color: AppColors.primary, size: 22,
+                                key: ValueKey('checked'))
+                            : Icon(Icons.radio_button_unchecked,
+                                color: Colors.grey.shade400, size: 22,
+                                key: const ValueKey('unchecked')),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),

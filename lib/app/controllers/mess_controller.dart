@@ -5,11 +5,20 @@ import '../models/other_models.dart';
 import '../services/mess_service.dart';
 import '../services/auth_service.dart';
 import '../services/task_service.dart';
+import '../services/push_notification_service.dart';
+import '../services/notification_service.dart' show NotificationService;
+import '../utils/app_constants.dart';
 import '../routes/app_routes.dart';
 
 class MessController extends GetxController {
   final _messService = Get.find<MessService>();
   final _authService = Get.find<AuthService>();
+  PushNotificationService? get _push => Get.isRegistered<PushNotificationService>()
+      ? Get.find<PushNotificationService>()
+      : null;
+  NotificationService? get _notif => Get.isRegistered<NotificationService>()
+      ? Get.find<NotificationService>()
+      : null;
 
   final currentMess = Rxn<MessModel>();
   final members = <UserModel>[].obs;
@@ -100,15 +109,37 @@ class MessController extends GetxController {
     try {
       final mess = currentMess.value;
       if (mess == null) return;
+      final myName = members.firstWhere((m) => m.uid == currentUid).name;
       await _messService.sendInvitation(
         messId: mess.messId,
         messName: mess.name,
         invitedBy: currentUid,
-        invitedByName: members.firstWhere((m) => m.uid == currentUid).name,
+        invitedByName: myName,
         invitedUserId: user.uid,
       );
-      Get.snackbar('Invited', '${user.name} has been invited!',
-          snackPosition: SnackPosition.BOTTOM);
+
+      // Push notification to invited user
+      await _push?.sendToUser(
+        userId: user.uid,
+        title: '📨 Mess Invitation',
+        body: '$myName invited you to join "${mess.name}". Open the app to accept or decline.',
+      );
+
+      // In-app notification to invited user
+      await _notif?.createInAppNotification(
+        userId: user.uid,
+        messId: mess.messId,
+        title: '📨 You have a mess invitation!',
+        body: '$myName invited you to join "${mess.name}". Tap to accept or decline.',
+        type: NotificationType.invitation,
+        relatedId: mess.messId,
+      );
+
+      Get.snackbar(
+        '✅ Invitation Sent',
+        '${user.name} has been invited to "${mess.name}".',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
       Get.snackbar('Error', e.toString());
     }
