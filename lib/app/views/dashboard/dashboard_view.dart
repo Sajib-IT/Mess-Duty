@@ -343,12 +343,14 @@ class _DashboardHome extends StatelessWidget {
                       final task = tasks.firstWhereOrNull((t) => t.taskId == rotation.taskId);
                       final member = members.firstWhereOrNull((m) => m.uid == rotation.assignedUserId);
                       final isMe = rotation.assignedUserId == authCtrl.currentUser.value?.uid;
+                      final isCurrentUserAway = authCtrl.currentUser.value?.isAway ?? false;
 
                       return _DutyCard(
                         rotation: rotation,
                         task: task,
                         member: member,
                         isMe: isMe,
+                        isCurrentUserAway: isCurrentUserAway,
                         taskCtrl: taskCtrl,
                       );
                     },
@@ -424,6 +426,7 @@ class _DutyCard extends StatelessWidget {
   final TaskModel? task;
   final UserModel? member;
   final bool isMe;
+  final bool isCurrentUserAway;
   final TaskController taskCtrl;
 
   const _DutyCard({
@@ -431,6 +434,7 @@ class _DutyCard extends StatelessWidget {
     required this.task,
     required this.member,
     required this.isMe,
+    required this.isCurrentUserAway,
     required this.taskCtrl,
   });
 
@@ -580,18 +584,34 @@ class _DutyCard extends StatelessWidget {
 
             // Action button
             if (isMe && rotation.status == RotationStatus.pending)
-              ElevatedButton(
-                onPressed: () => taskCtrl.submitCompletion(rotation),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  backgroundColor: color,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('Mark\nDone',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, height: 1.3)),
-              ),
+              isCurrentUserAway
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🏖️', style: TextStyle(fontSize: 16)),
+                          Text('Away', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                        ],
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: () => taskCtrl.submitCompletion(rotation),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: Size.zero,
+                        backgroundColor: color,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Mark\nDone',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, height: 1.3)),
+                    ),
           ],
         ),
       ),

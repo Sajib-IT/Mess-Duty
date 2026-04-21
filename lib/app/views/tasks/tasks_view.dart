@@ -429,6 +429,8 @@ class _TaskCard extends StatelessWidget {
                   : null;
               final isMe =
                   rotation?.assignedUserId == authCtrl.currentUser.value?.uid;
+              final isCurrentUserAway =
+                  authCtrl.currentUser.value?.isAway ?? false;
 
               // Compute next 2 members in rotation (skip away members)
               final available = group.memberIds
@@ -553,24 +555,50 @@ class _TaskCard extends StatelessWidget {
                             ),
                             if (isMe &&
                                 rotation.status == RotationStatus.pending)
-                              ElevatedButton(
-                                onPressed: () =>
-                                    taskCtrl.submitCompletion(rotation),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _color,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  minimumSize: Size.zero,
-                                ),
-                                child: const Text(
-                                  'Mark Done',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              )
+                              isCurrentUserAway
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: Colors.grey.shade300),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text('🏖️',
+                                              style:
+                                                  TextStyle(fontSize: 14)),
+                                          const SizedBox(width: 4),
+                                          Text('Away',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color:
+                                                      Colors.grey.shade500)),
+                                        ],
+                                      ),
+                                    )
+                                  : ElevatedButton(
+                                      onPressed: () =>
+                                          taskCtrl.submitCompletion(rotation),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _color,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        minimumSize: Size.zero,
+                                      ),
+                                      child: const Text(
+                                        'Mark Done',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                    )
                             else if (!isMe &&
-                                rotation.status == RotationStatus.pending)
+                                rotation.status == RotationStatus.pending &&
+                                !isCurrentUserAway)
                               _ContactButtons(
                                 member: assignedMember,
                                 rotation: rotation,
